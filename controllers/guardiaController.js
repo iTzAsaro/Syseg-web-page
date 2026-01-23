@@ -1,5 +1,6 @@
 const { Guardia, Afp, SistemaSalud, Comuna } = require('../models');
 
+// Controlador para crear un nuevo guardia
 exports.crear = async (req, res) => {
     try {
         // La contraseña se guarda tal cual viene, sin encriptar
@@ -10,6 +11,7 @@ exports.crear = async (req, res) => {
     }
 };
 
+// Controlador para listar todos los guardias
 exports.buscarTodos = async (req, res) => {
     try {
         const guardias = await Guardia.findAll({

@@ -18,6 +18,7 @@ exports.crear = async (req, res) => {
     }
 };
 
+// Controlador para listar todos los usuarios
 exports.buscarTodos = async (req, res) => {
     try {
         const usuarios = await Usuario.findAll({
@@ -30,6 +31,7 @@ exports.buscarTodos = async (req, res) => {
     }
 };
 
+// Controlador para obtener un usuario por ID
 exports.buscarUno = async (req, res) => {
     try {
         const id = req.params.id;
@@ -48,6 +50,10 @@ exports.buscarUno = async (req, res) => {
     }
 };
 
+// Middleware para verificar el token JWT en las solicitudes
+const jwt = require('jsonwebtoken');
+
+// Controlador para actualizar un usuario por ID
 exports.actualizar = async (req, res) => {
     try {
         const id = req.params.id;

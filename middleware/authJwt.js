@@ -37,7 +37,8 @@ const isAdmin = (req, res, next) => {
         return;
     }
     res.status(403).send({
-        message: '¡Se requiere rol de Administrador!'
+        message: '¡Se requiere rol de Administrador!',
+        role: req.userRole
     });
 };
 
