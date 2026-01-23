@@ -28,6 +28,10 @@ const MovimientoInventario = sequelize.define('MovimientoInventario', {
         type: DataTypes.INTEGER,
         allowNull: false // Usuario que registró el movimiento
     },
+    tipo_movimiento_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
     documento_asociado_id: { 
         type: DataTypes.INTEGER,
         allowNull: true // Justificación (ej. Entrega de EPP mediante DocumentoGuardia)

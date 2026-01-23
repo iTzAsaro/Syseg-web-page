@@ -14,7 +14,7 @@ const Permiso = sequelize.define('Permiso', {
         unique: true // Ej: 'VER_USUARIOS', 'EDITAR_GUARDIA'
     }
 }, {
-    tableName: 'permiso',
+    tableName: 'permisos',
     timestamps: false
 });
 

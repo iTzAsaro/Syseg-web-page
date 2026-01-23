@@ -1,8 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo Region (División geográfica principal)
-const Region = sequelize.define('Region', {
+const EstadoCivil = sequelize.define('EstadoCivil', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -13,8 +12,8 @@ const Region = sequelize.define('Region', {
         allowNull: false
     }
 }, {
-    tableName: 'region',
+    tableName: 'estado_civil',
     timestamps: false
 });
 
-module.exports = Region;
+module.exports = EstadoCivil;

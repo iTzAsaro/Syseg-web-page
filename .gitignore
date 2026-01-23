@@ -22,3 +22,6 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Temporal Code
+Codigo temporal/

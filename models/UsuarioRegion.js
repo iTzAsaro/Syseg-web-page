@@ -1,19 +1,18 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo UsuarioPermiso (Tabla pivote para asignar permisos extra a usuarios específicos)
-const UsuarioPermiso = sequelize.define('UsuarioPermiso', {
+const UsuarioRegion = sequelize.define('UsuarioRegion', {
     usuario_id: {
         type: DataTypes.INTEGER,
         primaryKey: true
     },
-    permiso_id: {
+    region_id: {
         type: DataTypes.INTEGER,
         primaryKey: true
     }
 }, {
-    tableName: 'usuario_permisos',
+    tableName: 'usuario_region',
     timestamps: false
 });
 
-module.exports = UsuarioPermiso;
+module.exports = UsuarioRegion;

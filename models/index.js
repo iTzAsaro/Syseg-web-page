@@ -15,6 +15,9 @@ const Guardia = require('./Guardia');
 const UsuarioPermiso = require('./UsuarioPermiso');
 const DocumentoGuardia = require('./DocumentoGuardia');
 const MovimientoInventario = require('./MovimientoInventario');
+const EstadoCivil = require('./EstadoCivil');
+const TipoMovimiento = require('./TipoMovimiento');
+const UsuarioRegion = require('./UsuarioRegion');
 
 // Asociaciones
 
@@ -26,9 +29,9 @@ Usuario.belongsTo(Rol, { foreignKey: 'rol_id' });
 Usuario.belongsToMany(Permiso, { through: UsuarioPermiso, foreignKey: 'usuario_id' });
 Permiso.belongsToMany(Usuario, { through: UsuarioPermiso, foreignKey: 'permiso_id' });
 
-// Usuario - Region (supervisa)
-Usuario.hasMany(Region, { foreignKey: 'supervisor_id' });
-Region.belongsTo(Usuario, { foreignKey: 'supervisor_id' });
+// Usuario - Region (supervisa) - A través de tabla intermedia UsuarioRegion
+Usuario.belongsToMany(Region, { through: UsuarioRegion, foreignKey: 'usuario_id' });
+Region.belongsToMany(Usuario, { through: UsuarioRegion, foreignKey: 'region_id' });
 
 // Region - Comuna (compone)
 Region.hasMany(Comuna, { foreignKey: 'region_id' });
@@ -41,8 +44,6 @@ Local.belongsTo(Comuna, { foreignKey: 'comuna_id' });
 // Comuna - Guardia (residencia)
 Comuna.hasMany(Guardia, { foreignKey: 'comuna_id' });
 Guardia.belongsTo(Comuna, { foreignKey: 'comuna_id' });
-
-// Relación Dotación Local-Guardia eliminada
 
 // Guardia - DocumentoGuardia (posee)
 Guardia.hasMany(DocumentoGuardia, { foreignKey: 'guardia_id' });
@@ -76,6 +77,14 @@ Guardia.belongsTo(Afp, { foreignKey: 'afp_id' });
 SistemaSalud.hasMany(Guardia, { foreignKey: 'salud_id' });
 Guardia.belongsTo(SistemaSalud, { foreignKey: 'salud_id' });
 
+// Guardia - EstadoCivil
+EstadoCivil.hasMany(Guardia, { foreignKey: 'civil_id' });
+Guardia.belongsTo(EstadoCivil, { foreignKey: 'civil_id' });
+
+// TipoMovimiento - MovimientoInventario
+TipoMovimiento.hasMany(MovimientoInventario, { foreignKey: 'tipo_movimiento_id' });
+MovimientoInventario.belongsTo(TipoMovimiento, { foreignKey: 'tipo_movimiento_id' });
+
 module.exports = {
     sequelize,
     Rol,
@@ -92,5 +101,8 @@ module.exports = {
     Guardia,
     UsuarioPermiso,
     DocumentoGuardia,
-    MovimientoInventario
+    MovimientoInventario,
+    EstadoCivil,
+    TipoMovimiento,
+    UsuarioRegion
 };

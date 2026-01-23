@@ -62,6 +62,10 @@ const Guardia = sequelize.define('Guardia', {
         type: DataTypes.INTEGER,
         allowNull: false // Asociación con Sistema de Salud
     },
+    civil_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true // Estado Civil
+    },
     comuna_id: {
         type: DataTypes.INTEGER,
         allowNull: false // Comuna de residencia
