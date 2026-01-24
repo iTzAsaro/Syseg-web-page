@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import axios from 'axios';
-import SysegLogoImg from './assets/syseg_logo.svg';
+import { useNavigate } from 'react-router-dom';
+import SysegLogoImg from '../assets/syseg_logo.svg';
 
 // Configuración de la instancia de Axios para peticiones HTTP
 const api = axios.create({
@@ -9,6 +10,7 @@ const api = axios.create({
 });
 
 export default function Login() {
+  const navigate = useNavigate();
   // Estado para controlar el modo de vista (false: Supervisor, true: Guardia)
   const [isGuardMode, setIsGuardMode] = useState(false);
   
@@ -42,7 +44,9 @@ export default function Login() {
       // Almacenamiento del token y datos de usuario en localStorage
       localStorage.setItem('token', response.data.accessToken);
       localStorage.setItem('user', JSON.stringify(response.data));
-      alert('Bienvenido Supervisor: ' + response.data.nombre);
+      
+      // Redirección al dashboard de administrador
+      navigate('/admin/dashboard');
     } catch (err) {
       console.error('Error Login Sup:', err);
       // Manejo de errores desde el backend o genéricos
@@ -68,7 +72,9 @@ export default function Login() {
       // Almacenamiento del token y datos de usuario en localStorage
       localStorage.setItem('token', response.data.accessToken);
       localStorage.setItem('user', JSON.stringify(response.data));
-      alert('Bienvenido Guardia: ' + response.data.nombre);
+      
+      // Redirección al dashboard de guardia
+      navigate('/guardia/dashboard');
     } catch (err) {
       console.error('Error Login Guard:', err);
       // Manejo de errores desde el backend o genéricos
@@ -134,7 +140,7 @@ export default function Login() {
                                   <input 
                                       id="email" 
                                       className="transition-all duration-200 ease-in-out block w-full pl-10 pr-3 h-12 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent sm:text-sm shadow-sm" 
-                                      placeholder="admin@syseg.cl" 
+                                      placeholder="soporte@syseg.cl" 
                                       required 
                                       type="email" 
                                       value={emailSup}
@@ -156,7 +162,7 @@ export default function Login() {
                                   <input 
                                       id="password" 
                                       className="transition-all duration-200 ease-in-out block w-full pl-10 pr-10 h-12 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent sm:text-sm shadow-sm" 
-                                      placeholder="••••••••" 
+                                      placeholder="123456" 
                                       required 
                                       type={showPassSup ? 'text' : 'password'}
                                       value={passSup}
@@ -331,12 +337,12 @@ export default function Login() {
                       </div>
                   </div>
 
-                  <div className="bg-gray-800 px-8 py-4 border-t border-gray-700 flex justify-between items-center">
+                  <div className="bg-gray-800 px-8 py-4 border-t border-gray-700 flex justify-between items-center">     
                       <span className="text-xs text-gray-500 font-mono">v1.0.4</span>
                       <span className="text-xs text-gray-500 flex items-center gap-1">
                           <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
                               <path d="M256 0c4.6 0 9.2 1 13.4 2.9L457.7 82.8c22 9.3 38.4 31 38.3 57.2c-.5 99.2-41.3 280.7-213.6 363.2c-16.7 8-36.1 8-52.8 0C57.3 420.7 16.5 239.2 16 140c-.1-26.2 16.3-47.9 38.3-57.2L242.7 2.9C246.8 1 251.4 0 256 0zm0 66.8l0 378.1C394 378 431.1 230.1 432 141.4L256 66.8s0 0 0 0z"></path>
-                          </svg> 
+                          </svg>
                           Seguro
                       </span>
                   </div>
