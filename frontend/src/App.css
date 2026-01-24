@@ -1,23 +1,34 @@
 #root {
+  /* Ancho máximo del contenedor principal */
   max-width: 1280px;
+  /* Margen automático para centrar horizontalmente */
   margin: 0 auto;
+  /* Espaciado interno */
   padding: 2rem;
+  /* Alineación de texto centrada */
   text-align: center;
 }
 
 .logo {
+  /* Altura del logo */
   height: 6em;
+  /* Espaciado interno */
   padding: 1.5em;
+  /* Optimización para animaciones de filtro */
   will-change: filter;
+  /* Transición suave para el filtro */
   transition: filter 300ms;
 }
+/* Efecto hover para el logo general */
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+/* Efecto hover específico para el logo de React */
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/* Definición de la animación de rotación */
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
@@ -27,6 +38,7 @@
   }
 }
 
+/* Aplicar animación si el usuario no tiene preferencias de movimiento reducido */
 @media (prefers-reduced-motion: no-preference) {
   a:nth-of-type(2) .logo {
     animation: logo-spin infinite 20s linear;
@@ -34,9 +46,11 @@
 }
 
 .card {
+  /* Espaciado interno para tarjetas */
   padding: 2em;
 }
 
 .read-the-docs {
+  /* Color de texto para la clase de documentación */
   color: #888;
 }

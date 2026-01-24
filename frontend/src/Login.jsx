@@ -1,69 +1,77 @@
 import React, { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import axios from 'axios';
+import SysegLogoImg from './assets/syseg_logo.svg';
 
-// Configuración de Axios
+// Configuración de la instancia de Axios para peticiones HTTP
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api', // Asegúrate de que este puerto coincida con tu backend
+  baseURL: 'http://localhost:3000/api', // URL base del backend (Asegúrate de que el puerto coincida)
 });
 
 export default function Login() {
+  // Estado para controlar el modo de vista (false: Supervisor, true: Guardia)
   const [isGuardMode, setIsGuardMode] = useState(false);
   
-  // Estados Supervisor
-  const [emailSup, setEmailSup] = useState('');
-  const [passSup, setPassSup] = useState('');
-  const [showPassSup, setShowPassSup] = useState(false);
-  const [isLoadingSup, setIsLoadingSup] = useState(false);
-  const [errorSup, setErrorSup] = useState('');
+  // --- Estados para el formulario de Supervisor ---
+  const [emailSup, setEmailSup] = useState(''); // Correo del supervisor
+  const [passSup, setPassSup] = useState(''); // Contraseña del supervisor
+  const [showPassSup, setShowPassSup] = useState(false); // Visibilidad de contraseña
+  const [isLoadingSup, setIsLoadingSup] = useState(false); // Estado de carga
+  const [errorSup, setErrorSup] = useState(''); // Mensajes de error
 
-  // Estados Guardia
-  const [rutGuard, setRutGuard] = useState('');
-  const [passGuard, setPassGuard] = useState('');
-  const [showPassGuard, setShowPassGuard] = useState(false);
-  const [isLoadingGuard, setIsLoadingGuard] = useState(false);
-  const [errorGuard, setErrorGuard] = useState('');
+  // --- Estados para el formulario de Guardia ---
+  const [rutGuard, setRutGuard] = useState(''); // RUT del guardia
+  const [passGuard, setPassGuard] = useState(''); // Contraseña del guardia
+  const [showPassGuard, setShowPassGuard] = useState(false); // Visibilidad de contraseña
+  const [isLoadingGuard, setIsLoadingGuard] = useState(false); // Estado de carga
+  const [errorGuard, setErrorGuard] = useState(''); // Mensajes de error
 
+  // Manejador de envío del formulario de Supervisor
   const handleSupervisorSubmit = async (e) => {
     e.preventDefault();
     setIsLoadingSup(true);
     setErrorSup('');
 
     try {
+      // Petición de login para administradores/supervisores
       const response = await api.post('/auth/signin/web', {
         email: emailSup,
         password: passSup
       });
       console.log('Sup Login Exitoso:', response.data);
-      // Aquí podrías guardar el token y redirigir
+      // Almacenamiento del token y datos de usuario en localStorage
       localStorage.setItem('token', response.data.accessToken);
       localStorage.setItem('user', JSON.stringify(response.data));
       alert('Bienvenido Supervisor: ' + response.data.nombre);
     } catch (err) {
       console.error('Error Login Sup:', err);
+      // Manejo de errores desde el backend o genéricos
       setErrorSup(err.response?.data?.message || 'Error al iniciar sesión');
     } finally {
       setIsLoadingSup(false);
     }
   };
 
+  // Manejador de envío del formulario de Guardia
   const handleGuardSubmit = async (e) => {
     e.preventDefault();
     setIsLoadingGuard(true);
     setErrorGuard('');
 
     try {
+      // Petición de login para la aplicación móvil/operativa (Guardias)
       const response = await api.post('/auth/signin/app', {
         rut: rutGuard,
         password: passGuard
       });
       console.log('Guard Login Exitoso:', response.data);
-      // Aquí podrías guardar el token y redirigir
+      // Almacenamiento del token y datos de usuario en localStorage
       localStorage.setItem('token', response.data.accessToken);
       localStorage.setItem('user', JSON.stringify(response.data));
       alert('Bienvenido Guardia: ' + response.data.nombre);
     } catch (err) {
       console.error('Error Login Guard:', err);
+      // Manejo de errores desde el backend o genéricos
       setErrorGuard(err.response?.data?.message || 'Error al iniciar sesión');
     } finally {
       setIsLoadingGuard(false);
@@ -71,13 +79,16 @@ export default function Login() {
   };
 
   return (
+    // Contenedor principal con transición de fondo según el modo (Claro/Oscuro)
     <div className={`min-h-screen w-full flex flex-col items-center justify-center font-sans relative overflow-hidden transition-colors duration-700 ${isGuardMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       
-      {/* Fondo Dinámico */}
+      {/* --- Fondo Dinámico --- */}
+      {/* Patrón de puntos */}
       <div className={`absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] transition-opacity duration-700 ${isGuardMode ? 'opacity-5' : 'opacity-70'}`}></div>
+      {/* Degradado superpuesto */}
       <div className={`absolute inset-0 bg-gradient-to-b pointer-events-none transition-colors duration-700 ${isGuardMode ? 'from-black via-gray-900 to-black' : 'from-transparent via-white/50 to-white/80'}`}></div>
 
-      {/* CONTENEDOR FLIP 3D */}
+      {/* --- CONTENEDOR FLIP 3D (Tarjeta Giratoria) --- */}
       <div className="relative w-full max-w-[400px] h-[620px] p-4" style={{ perspective: '2000px' }}>
           <div 
               className="relative w-full h-full transition-transform duration-700 cubic-bezier(0.4, 0.0, 0.2, 1)" 
@@ -89,10 +100,13 @@ export default function Login() {
                   className="absolute inset-0 w-full h-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col"
                   style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
               >
+                  {/* Barra superior decorativa */}
                   <div className="h-2 w-full bg-red-600"></div>
                   
                   <div className="p-8 pt-10 flex-1 flex flex-col">
                       <div className="text-center mb-6">
+                          {/* Logo Syseg */}
+                          <img src={SysegLogoImg} alt="Syseg Logo" className="h-24 w-auto mx-auto mb-4 object-contain" />
                           <div className="flex flex-col">
                               <span className="text-red-600 font-bold text-xs tracking-[0.2em] uppercase">Gestión de Inventario</span>
                               <span className="text-gray-400 text-sm mt-1 font-medium">Portal Administrativo</span>
@@ -100,15 +114,19 @@ export default function Login() {
                       </div>
 
                       <form onSubmit={handleSupervisorSubmit} className="space-y-5">
+                          {/* Mensaje de error Supervisor */}
                           {errorSup && (
                             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium">
                               {errorSup}
                             </div>
                           )}
+                          
+                          {/* Campo Email */}
                           <div className="space-y-1">
                               <label htmlFor="email" className="block text-sm font-medium text-gray-700 ml-1">Correo Corporativo</label>
                               <div className="relative">
                                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                      {/* Icono Usuario */}
                                       <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 512 512" className="text-gray-400 text-lg" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
                                           <path d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48L48 64zM0 176L0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-208L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z"></path>
                                       </svg>
@@ -125,10 +143,12 @@ export default function Login() {
                               </div>
                           </div>
 
+                          {/* Campo Contraseña */}
                           <div className="space-y-1">
                               <label htmlFor="password" className="block text-sm font-medium text-gray-700 ml-1">Contraseña</label>
                               <div className="relative">
                                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                      {/* Icono Candado */}
                                       <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" className="text-gray-400 text-lg" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
                                           <path d="M144 144l0 48 160 0 0-48c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192l0-48C80 64.5 144.5 0 224 0s144 64.5 144 144l0 48 16 0c35.3 0 64 28.7 64 64l0 192c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 256c0-35.3 28.7-64 64-64l16 0z"></path>
                                       </svg>
@@ -142,6 +162,7 @@ export default function Login() {
                                       value={passSup}
                                       onChange={(e) => setPassSup(e.target.value)}
                                   />
+                                  {/* Botón Mostrar/Ocultar Contraseña */}
                                   <button 
                                       type="button" 
                                       onClick={() => setShowPassSup(!showPassSup)}
@@ -174,7 +195,7 @@ export default function Login() {
                           </div>
                       </form>
 
-                      {/* Botón Switch Modo */}
+                      {/* Botón Switch Modo - Ir a Guardia */}
                       <button 
                          onClick={() => setIsGuardMode(true)}
                          className="mx-auto mt-6 text-[10px] uppercase font-bold text-gray-400 hover:text-red-600 flex items-center gap-1.5 transition-colors tracking-widest"
@@ -188,6 +209,7 @@ export default function Login() {
                       </div>
                   </div>
 
+                  {/* Footer Tarjeta */}
                   <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 flex justify-between items-center">
                       <span className="text-xs text-gray-400 font-mono">v1.0.4</span>
                       <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -204,10 +226,13 @@ export default function Login() {
                   className="absolute inset-0 w-full h-full bg-gray-900 rounded-2xl shadow-xl shadow-black border border-gray-700 overflow-hidden flex flex-col"
                   style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
               >
+                  {/* Barra superior con brillo rojo */}
                   <div className="h-2 w-full bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]"></div>
                   
                   <div className="p-8 pt-10 flex-1 flex flex-col">
                       <div className="text-center mb-6">
+                          {/* Logo Invertido para fondo oscuro */}
+                          <img src={SysegLogoImg} alt="Syseg Logo" className="h-24 w-auto mx-auto mb-4 object-contain invert brightness-0" />
                           <div className="flex flex-col">
                               <span className="text-red-500 font-bold text-xs tracking-[0.2em] uppercase">Control de Acceso</span>
                               <span className="text-gray-400 text-sm mt-1 font-medium">Portal Operativo</span>
@@ -215,11 +240,14 @@ export default function Login() {
                       </div>
 
                       <form onSubmit={handleGuardSubmit} className="space-y-5">
+                          {/* Mensaje de error Guardia */}
                           {errorGuard && (
                             <div className="bg-red-900/50 border border-red-800 text-red-200 p-3 rounded-lg text-sm text-center font-medium">
                               {errorGuard}
                             </div>
                           )}
+                          
+                          {/* Campo RUT */}
                           <div className="space-y-1">
                               <label className="block text-sm font-medium text-gray-300 ml-1">RUT Guardia</label>
                               <div className="relative">
@@ -239,6 +267,7 @@ export default function Login() {
                               </div>
                           </div>
 
+                          {/* Campo Contraseña Guardia */}
                           <div className="space-y-1">
                               <label className="block text-sm font-medium text-gray-300 ml-1">Contraseña</label>
                               <div className="relative">
