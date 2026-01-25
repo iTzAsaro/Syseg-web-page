@@ -19,6 +19,7 @@ app.use(morgan('dev'));
 require('./routes/authRoutes')(app);
 require('./routes/usuarioRoutes')(app);
 require('./routes/guardiaRoutes')(app);
+require('./routes/bitacoraRoutes')(app);
 
 // Ruta de vida del servidor
 app.get('/', (req, res) => {

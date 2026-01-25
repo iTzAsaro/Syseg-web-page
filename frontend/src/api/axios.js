@@ -1,0 +1,22 @@
+import axios from 'axios';
+
+// Configuración de la instancia de Axios para peticiones HTTP
+const api = axios.create({
+  baseURL: 'http://localhost:3000/api', // URL base del backend
+});
+
+// Interceptor para agregar el token a las peticiones
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['x-access-token'] = token;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export default api;

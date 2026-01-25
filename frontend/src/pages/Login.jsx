@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import SysegLogoImg from '../assets/syseg_logo.svg';
 
-// Configuración de la instancia de Axios para peticiones HTTP
-const api = axios.create({
-  baseURL: 'http://localhost:3000/api', // URL base del backend (Asegúrate de que el puerto coincida)
-});
 
 export default function Login() {
   const navigate = useNavigate();
