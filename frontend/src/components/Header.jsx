@@ -1,7 +1,11 @@
 import React from 'react';
-import { Menu, Bell, ChevronDown } from 'lucide-react';
+import { Menu, Bell, ChevronDown, ShoppingCart } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 const Header = ({ onMenuClick }) => {
+  const { getCartCount, toggleCart } = useCart();
+  const cartCount = getCartCount();
+
   return (
     <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 shadow-sm shrink-0 z-30">
         <div className="flex items-center gap-4">
@@ -15,6 +19,18 @@ const Header = ({ onMenuClick }) => {
         </div>
 
         <div className="flex items-center gap-3 sm:gap-6">
+            <button 
+              onClick={toggleCart}
+              className="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full relative transition-all"
+              title="Ver Carrito"
+            >
+                <ShoppingCart className="w-5 h-5" />
+                {cartCount > 0 && (
+                  <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full ring-2 ring-white">
+                    {cartCount}
+                  </span>
+                )}
+            </button>
             <button className="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full relative transition-all">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-600 rounded-full ring-2 ring-white"></span>

@@ -2,8 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, Box, Users, FileText, Settings, LogOut, 
-  ArrowUpRight, ArrowDownRight, ShieldCheck, 
-  FileSpreadsheet, UserX, X
+  ShieldCheck, FileSpreadsheet, UserX, X
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -14,8 +13,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     { id: 'dashboard', label: 'Panel General', icon: Home, path: '/admin/dashboard' },
     { id: 'inventory', label: 'Inventario', icon: Box, path: '/admin/inventory' },
     // Placeholder paths for other items
-    { id: 'entry', label: 'Ingreso Inventario', icon: ArrowUpRight, path: '/admin/entry' },
-    { id: 'withdrawal', label: 'Retiro Inventario', icon: ArrowDownRight, path: '/admin/withdrawal' },
     { id: 'reports', label: 'Reportes', icon: FileText, path: '/admin/reports' },
     { id: 'logs', label: 'Bitácora', icon: FileSpreadsheet, path: '/admin/logs' },
     { id: 'users', label: 'Gestión de Usuarios', icon: Users, path: '/admin/users' },

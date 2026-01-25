@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import ProductModal from '../../components/ProductModal';
+import { useCart } from '../../context/CartContext';
 
 // --- VISTA: INVENTARIO CON CARRITO Y MODAL ---
 const Inventario = () => {
@@ -17,8 +18,7 @@ const Inventario = () => {
     { id: 6, name: 'Botas de Seguridad T42', category: 'EPP', sku: 'EPP-B42', stock: 20, minStock: 5 },
   ]);
 
-  const [cart, setCart] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { addToCart } = useCart();
   const [searchTerm, setSearchTerm] = useState('');
   
   // Estados para el Modal de Producto
@@ -56,48 +56,7 @@ const Inventario = () => {
       setIsModalOpen(false);
   };
 
-  // --- LÓGICA DE CARRITO ---
-  const addToCart = (item) => {
-    const existingItem = cart.find(i => i.id === item.id);
-    if (existingItem) {
-      alert("Este ítem ya está en la lista de retiro.");
-    } else {
-      setCart([...cart, { ...item, assignedTo: '' }]);
-      setIsCartOpen(true);
-    }
-  };
 
-  /* 
-  const removeFromCart = (itemId) => {
-    setCart(cart.filter(i => i.id !== itemId));
-  };
-
-  const updateAssignment = (itemId, person) => {
-    setCart(cart.map(item => item.id === itemId ? { ...item, assignedTo: person } : item));
-  };
-
-  const handleProcessWithdrawal = () => {
-    const unassigned = cart.filter(i => !i.assignedTo);
-    if (unassigned.length > 0) {
-        alert(`Por favor asigne un responsable para: ${unassigned.map(i => i.name).join(', ')}`);
-        return;
-    }
-    
-    // Actualizar stock real
-    const updatedProducts = products.map(p => {
-        const cartItem = cart.find(c => c.id === p.id);
-        if (cartItem) {
-            return { ...p, stock: Math.max(0, p.stock - 1) }; // Reduce 1 por simplicidad
-        }
-        return p;
-    });
-    
-    setProducts(updatedProducts);
-    alert("Retiro procesado correctamente. Stock actualizado.");
-    setCart([]);
-    setIsCartOpen(false);
-  };
-  */
 
   // --- FILTROS ---
   const filteredProducts = products.filter(item => 
