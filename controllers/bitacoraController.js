@@ -1,5 +1,5 @@
-const { Bitacora, Usuario, Sequelize } = require('../models');
-const Op = Sequelize.Op;
+const { Bitacora, Usuario } = require('../models');
+const { Op } = require('sequelize');
 
 // Crear un nuevo registro en bitácora
 exports.create = async (req, res) => {
