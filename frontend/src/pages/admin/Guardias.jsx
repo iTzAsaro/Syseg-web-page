@@ -48,6 +48,8 @@ const Guardias = () => {
             const data = await guardiaService.getAll();
             setGuards(data);
         } catch (error) {
+            // Ignorar errores 401 ya que son manejados por el interceptor
+            if (error.response && error.response.status === 401) return;
             console.error("Error cargando guardias:", error);
         }
     };

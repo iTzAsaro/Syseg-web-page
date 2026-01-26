@@ -192,6 +192,8 @@ const BitacoraAdmin = () => {
             setTotalItems(data.totalItems);
             setPage(data.currentPage);
         } catch (error) {
+            // Ignorar errores 401 ya que son manejados por el interceptor
+            if (error.response && error.response.status === 401) return;
             console.error("Error fetching logs:", error);
         } finally {
             setLoading(false);

@@ -20,6 +20,7 @@ const TipoMovimiento = require('./TipoMovimiento');
 const UsuarioRegion = require('./UsuarioRegion');
 const Bitacora = require('./Bitacora');
 const Asignacion = require('./Asignacion');
+const Blacklist = require('./Blacklist');
 
 // Asociaciones
 
@@ -120,5 +121,6 @@ module.exports = {
     TipoMovimiento,
     UsuarioRegion,
     Bitacora,
-    Asignacion
+    Asignacion,
+    Blacklist
 };
