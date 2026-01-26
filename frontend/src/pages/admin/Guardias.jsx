@@ -65,6 +65,17 @@ const Guardias = () => {
                 email: guard.email || '',
                 nombre_emergencia: guard.nombre_emergencia || '',
                 fono_emergencia: guard.fono_emergencia || '',
+                celular: guard.celular || '',
+                banco_nombre: guard.banco_nombre || '',
+                banco_tipo_cuenta: guard.banco_tipo_cuenta || '',
+                banco_numero_cuenta: guard.banco_numero_cuenta || '',
+                comuna: guard.comuna || 'Santiago',
+                talla_camisa: guard.talla_camisa || 'M',
+                talla_pantalon: guard.talla_pantalon || '42',
+                talla_zapato: guard.talla_zapato || '41',
+                afp: guard.afp || 'Modelo',
+                salud: guard.salud || 'Fonasa',
+                password: '', // Contraseña siempre vacía al editar
                 // Asumiendo que el backend devuelve estos campos tal cual
             });
         } else {

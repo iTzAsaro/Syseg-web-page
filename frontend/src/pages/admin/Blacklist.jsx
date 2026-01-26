@@ -46,12 +46,12 @@ export default function Blacklist() {
     if (entry) {
       setCurrentEntry(entry);
       setFormData({
-        nombre: entry.nombre,
-        rut: entry.rut,
-        recintos: entry.recintos,
-        fecha_ingreso: entry.fecha_ingreso,
-        fecha_bloqueo: entry.fecha_bloqueo,
-        motivo: entry.motivo,
+        nombre: entry.nombre || '',
+        rut: entry.rut || '',
+        recintos: entry.recintos || '',
+        fecha_ingreso: entry.fecha_ingreso || '',
+        fecha_bloqueo: entry.fecha_bloqueo || '',
+        motivo: entry.motivo || '',
         evidencia_url: entry.evidencia_url || ''
       });
     } else {

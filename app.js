@@ -23,6 +23,7 @@ require('./routes/bitacoraRoutes')(app);
 require('./routes/asignacionRoutes')(app);
 require('./routes/localRoutes')(app);
 require('./routes/blacklistRoutes')(app);
+require('./routes/auditoriaRoutes')(app);
 
 // Ruta de vida del servidor
 app.get('/', (req, res) => {

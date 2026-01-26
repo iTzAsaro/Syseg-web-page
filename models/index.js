@@ -21,6 +21,7 @@ const UsuarioRegion = require('./UsuarioRegion');
 const Bitacora = require('./Bitacora');
 const Asignacion = require('./Asignacion');
 const Blacklist = require('./Blacklist');
+const Auditoria = require('./Auditoria');
 
 // Asociaciones
 
@@ -100,6 +101,10 @@ Asignacion.belongsTo(Guardia, { foreignKey: 'guardia_id' });
 Local.hasMany(Asignacion, { foreignKey: 'local_id' });
 Asignacion.belongsTo(Local, { foreignKey: 'local_id' });
 
+// Usuario - Auditoria
+Usuario.hasMany(Auditoria, { foreignKey: 'usuario_id' });
+Auditoria.belongsTo(Usuario, { foreignKey: 'usuario_id' });
+
 module.exports = {
     sequelize,
     Rol,
@@ -122,5 +127,6 @@ module.exports = {
     UsuarioRegion,
     Bitacora,
     Asignacion,
-    Blacklist
+    Blacklist,
+    Auditoria
 };

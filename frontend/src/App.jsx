@@ -7,6 +7,7 @@ import InventarioAdmin from './pages/admin/Inventario';
 import ReportesAdmin from './pages/admin/Reportes';
 import BitacoraAdmin from './pages/admin/Bitacora';
 import GuardiasAdmin from './pages/admin/Guardias';
+import UsuariosAdmin from './pages/admin/Usuarios';
 import BlacklistAdmin from './pages/admin/Blacklist';
 import PlaceholderPage from './pages/admin/PlaceholderPage';
 import DashboardGuardia from './pages/guardia/DashboardGuardia';
@@ -27,7 +28,7 @@ function App() {
           <Route path="/admin/reports" element={<ReportesAdmin />} />
           <Route path="/admin/logs" element={<BitacoraAdmin />} />
           <Route path="/admin/guards" element={<GuardiasAdmin />} />
-          <Route path="/admin/users" element={<PlaceholderPage title="Gestión de Usuarios" />} />
+          <Route path="/admin/users" element={<UsuariosAdmin />} />
           <Route path="/admin/blacklist" element={<BlacklistAdmin />} />
           <Route path="/admin/settings" element={<PlaceholderPage title="Configuración" />} />
           

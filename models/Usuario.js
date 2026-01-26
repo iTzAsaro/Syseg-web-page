@@ -28,6 +28,10 @@ const Usuario = sequelize.define('Usuario', {
     rol_id: {
         type: DataTypes.INTEGER,
         allowNull: false // Rol asignado (ej. Admin, Supervisor)
+    },
+    fecha_registro: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
     }
 }, {
     tableName: 'usuario',
