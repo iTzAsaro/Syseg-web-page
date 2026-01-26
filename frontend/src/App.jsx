@@ -6,6 +6,8 @@ import DashboardAdmin from './pages/admin/Dashboard';
 import InventarioAdmin from './pages/admin/Inventario';
 import ReportesAdmin from './pages/admin/Reportes';
 import BitacoraAdmin from './pages/admin/Bitacora';
+import GuardiasAdmin from './pages/admin/Guardias';
+import PlaceholderPage from './pages/admin/PlaceholderPage';
 import DashboardGuardia from './pages/guardia/DashboardGuardia';
 
 // Componente principal de la aplicación
@@ -23,6 +25,10 @@ function App() {
           <Route path="/admin/inventory" element={<InventarioAdmin />} />
           <Route path="/admin/reports" element={<ReportesAdmin />} />
           <Route path="/admin/logs" element={<BitacoraAdmin />} />
+          <Route path="/admin/guards" element={<GuardiasAdmin />} />
+          <Route path="/admin/users" element={<PlaceholderPage title="Gestión de Usuarios" />} />
+          <Route path="/admin/blacklist" element={<PlaceholderPage title="Blacklist" />} />
+          <Route path="/admin/settings" element={<PlaceholderPage title="Configuración" />} />
           
           {/* Rutas de Guardia */}
           <Route path="/guardia/dashboard" element={<DashboardGuardia />} />

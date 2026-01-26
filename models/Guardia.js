@@ -32,8 +32,24 @@ const Guardia = sequelize.define('Guardia', {
         type: DataTypes.STRING(150),
         allowNull: false
     },
+    email: {
+        type: DataTypes.STRING(150),
+        allowNull: true
+    },
+    nacimiento: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
+    },
     celular: {
         type: DataTypes.STRING(20)
+    },
+    nombre_emergencia: {
+        type: DataTypes.STRING(150),
+        allowNull: true
+    },
+    fono_emergencia: {
+        type: DataTypes.STRING(20),
+        allowNull: true
     },
     talla_camisa: {
         type: DataTypes.STRING(10)
@@ -56,11 +72,11 @@ const Guardia = sequelize.define('Guardia', {
     // local_id eliminado (la asignación es dinámica por turno, no fija)
     afp_id: {
         type: DataTypes.INTEGER,
-        allowNull: false // Asociación con AFP
+        allowNull: true // Asociación con AFP (Opcional por ahora)
     },
     salud_id: {
         type: DataTypes.INTEGER,
-        allowNull: false // Asociación con Sistema de Salud
+        allowNull: true // Asociación con Sistema de Salud (Opcional por ahora)
     },
     civil_id: {
         type: DataTypes.INTEGER,
@@ -68,7 +84,7 @@ const Guardia = sequelize.define('Guardia', {
     },
     comuna_id: {
         type: DataTypes.INTEGER,
-        allowNull: false // Comuna de residencia
+        allowNull: true // Comuna de residencia (Opcional por ahora)
     }
 }, {
     tableName: 'guardia',

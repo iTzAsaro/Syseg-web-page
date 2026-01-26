@@ -20,6 +20,8 @@ require('./routes/authRoutes')(app);
 require('./routes/usuarioRoutes')(app);
 require('./routes/guardiaRoutes')(app);
 require('./routes/bitacoraRoutes')(app);
+require('./routes/asignacionRoutes')(app);
+require('./routes/localRoutes')(app);
 
 // Ruta de vida del servidor
 app.get('/', (req, res) => {

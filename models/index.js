@@ -19,6 +19,7 @@ const EstadoCivil = require('./EstadoCivil');
 const TipoMovimiento = require('./TipoMovimiento');
 const UsuarioRegion = require('./UsuarioRegion');
 const Bitacora = require('./Bitacora');
+const Asignacion = require('./Asignacion');
 
 // Asociaciones
 
@@ -90,6 +91,14 @@ MovimientoInventario.belongsTo(TipoMovimiento, { foreignKey: 'tipo_movimiento_id
 Usuario.hasMany(Bitacora, { foreignKey: 'usuario_id' });
 Bitacora.belongsTo(Usuario, { foreignKey: 'usuario_id' });
 
+// Guardia - Asignacion
+Guardia.hasMany(Asignacion, { foreignKey: 'guardia_id' });
+Asignacion.belongsTo(Guardia, { foreignKey: 'guardia_id' });
+
+// Local - Asignacion
+Local.hasMany(Asignacion, { foreignKey: 'local_id' });
+Asignacion.belongsTo(Local, { foreignKey: 'local_id' });
+
 module.exports = {
     sequelize,
     Rol,
@@ -110,5 +119,6 @@ module.exports = {
     EstadoCivil,
     TipoMovimiento,
     UsuarioRegion,
-    Bitacora
+    Bitacora,
+    Asignacion
 };

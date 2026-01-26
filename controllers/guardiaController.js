@@ -49,19 +49,23 @@ exports.buscarUno = async (req, res) => {
 exports.actualizar = async (req, res) => {
     try {
         const id = req.params.id;
-        // La contraseña se actualiza tal cual viene, sin encriptar
         
+        // Primero verificar si existe
+        const guardiaExistente = await Guardia.findByPk(id);
+        
+        if (!guardiaExistente) {
+            return res.status(404).send({ message: "Guardia no encontrado." });
+        }
+
+        // Intentar actualizar
         const [actualizado] = await Guardia.update(req.body, {
             where: { id: id }
         });
 
-        if (actualizado) {
-            // Permitir ver todo al devolver el guardia actualizado
-            const guardiaActualizado = await Guardia.findByPk(id);
-            res.status(200).send(guardiaActualizado);
-        } else {
-            res.status(404).send({ message: "Guardia no encontrado." });
-        }
+        // Si se actualizó o si los datos eran iguales (actualizado = 0 pero existe), devolvemos el registro
+        const guardiaActualizado = await Guardia.findByPk(id);
+        res.status(200).send(guardiaActualizado);
+
     } catch (error) {
         res.status(500).send({ message: error.message });
     }

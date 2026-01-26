@@ -57,19 +57,23 @@ const jwt = require('jsonwebtoken');
 exports.actualizar = async (req, res) => {
     try {
         const id = req.params.id;
-        // La contraseña se actualiza tal cual viene, sin encriptar
         
+        // Primero verificar si existe
+        const usuarioExistente = await Usuario.findByPk(id);
+        
+        if (!usuarioExistente) {
+            return res.status(404).send({ message: "Usuario no encontrado." });
+        }
+
+        // Intentar actualizar
         const [actualizado] = await Usuario.update(req.body, {
             where: { id: id }
         });
 
-        if (actualizado) {
-            // Permitir ver todo al devolver el usuario actualizado
-            const usuarioActualizado = await Usuario.findByPk(id); 
-            res.status(200).send(usuarioActualizado);
-        } else {
-            res.status(404).send({ message: "Usuario no encontrado." });
-        }
+        // Devolver el usuario actualizado
+        const usuarioActualizado = await Usuario.findByPk(id); 
+        res.status(200).send(usuarioActualizado);
+
     } catch (error) {
         res.status(500).send({ message: error.message });
     }
