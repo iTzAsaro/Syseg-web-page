@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 // Crear un nuevo registro en bitácora
 exports.create = async (req, res) => {
     try {
-        const { accion, detalles, nivel, ip_address } = req.body;
+        const { accion, detalles, nivel, ip_address, fecha } = req.body;
         
         // El usuario viene del middleware de autenticación (verifyToken)
         const usuario_id = req.userId; 
@@ -16,14 +16,21 @@ exports.create = async (req, res) => {
             if (user) autor = user.nombre;
         }
 
-        const bitacora = await Bitacora.create({
+        const bitacoraData = {
             usuario_id,
             autor,
             accion,
             detalles,
             nivel,
             ip_address
-        });
+        };
+
+        // Si se proporciona fecha, usarla; si no, dejar que Sequelize use defaultValue (NOW)
+        if (fecha) {
+            bitacoraData.fecha = fecha;
+        }
+
+        const bitacora = await Bitacora.create(bitacoraData);
 
         res.status(201).send(bitacora);
     } catch (error) {
@@ -82,6 +89,60 @@ exports.buscarTodos = async (req, res) => {
     } catch (error) {
         res.status(500).send({
             message: error.message || "Error al obtener bitácora."
+        });
+    }
+};
+
+// Actualizar un registro de bitácora
+exports.update = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { accion, detalles, nivel, fecha } = req.body;
+        const usuario_id = req.userId;
+
+        const log = await Bitacora.findByPk(id);
+
+        if (!log) {
+            return res.status(404).send({ message: "Registro no encontrado." });
+        }
+
+        // Verificar permisos (solo el autor o admin pueden editar - simplificado por ahora a todos autenticados)
+        // Idealmente: if (log.usuario_id !== usuario_id && !isAdmin) ...
+
+        log.accion = accion || log.accion;
+        log.detalles = detalles || log.detalles;
+        log.nivel = nivel || log.nivel;
+        if (fecha) log.fecha = fecha;
+        
+        // Opcional: registrar que fue editado
+        // log.detalles += ` (Editado por usuario ${usuario_id})`;
+
+        await log.save();
+
+        res.send({ message: "Registro actualizado exitosamente.", log });
+    } catch (error) {
+        res.status(500).send({
+            message: "Error al actualizar registro de bitácora."
+        });
+    }
+};
+
+// Eliminar un registro de bitácora
+exports.delete = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const log = await Bitacora.findByPk(id);
+
+        if (!log) {
+            return res.status(404).send({ message: "Registro no encontrado." });
+        }
+
+        await log.destroy();
+
+        res.send({ message: "Registro eliminado exitosamente." });
+    } catch (error) {
+        res.status(500).send({
+            message: "Error al eliminar registro de bitácora."
         });
     }
 };

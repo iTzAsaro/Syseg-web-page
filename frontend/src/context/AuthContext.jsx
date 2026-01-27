@@ -13,33 +13,52 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // 1. Inicializar estado desde localStorage para persistencia inmediata
+    const [user, setUser] = useState(() => {
+        try {
+            const storedUser = localStorage.getItem('user');
+            return storedUser ? JSON.parse(storedUser) : null;
+        } catch (error) {
+            console.error("Error recuperando usuario:", error);
+            return null;
+        }
+    });
+    
+    // 2. Loading inicial depende de si tenemos token. Si tenemos, mostramos UI optimista mientras verificamos.
+    const [loading, setLoading] = useState(() => !localStorage.getItem('token'));
     const navigate = useNavigate();
 
     useEffect(() => {
         // Verificar sesión al cargar usando el endpoint de backend
         const checkAuth = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    setLoading(false);
-                    return;
-                }
+            const token = localStorage.getItem('token');
+            
+            // Si no hay token, asegurar estado limpio y terminar carga
+            if (!token) {
+                setUser(null);
+                setLoading(false);
+                return;
+            }
 
+            try {
                 // Verificar token contra el servidor
                 const userData = await AuthService.verify();
+                
+                // Si el token es válido, actualizamos el estado y localStorage con la data fresca
                 setUser(userData);
+                localStorage.setItem('user', JSON.stringify(userData));
             } catch (error) {
-                // Si es error 401, es esperado (sesión expirada), no lo logueamos como error crítico
-                if (error.response && error.response.status === 401) {
+                // Si es error 401/403, el token no sirve -> Logout
+                if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                     console.log("Sesión expirada o token inválido (verificado al inicio).");
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setUser(null);
                 } else {
-                    console.error("Error al verificar sesión:", error);
+                    // Si es otro error (ej. red), mantenemos la sesión local si existe (estrategia offline-first opcional)
+                    // O podemos decidir cerrar sesión por seguridad. Por ahora, solo logueamos.
+                    console.error("Error al verificar sesión (posible error de red):", error);
                 }
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setUser(null);
             } finally {
                 setLoading(false);
             }

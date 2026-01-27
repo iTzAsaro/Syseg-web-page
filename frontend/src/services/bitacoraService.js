@@ -12,6 +12,18 @@ const BitacoraService = {
   create: async (data) => {
     const response = await api.post('/bitacora', data);
     return response.data;
+  },
+
+  // Actualizar un registro existente
+  update: async (id, data) => {
+    const response = await api.put(`/bitacora/${id}`, data);
+    return response.data;
+  },
+
+  // Eliminar un registro
+  delete: async (id) => {
+    const response = await api.delete(`/bitacora/${id}`);
+    return response.data;
   }
 };
 
