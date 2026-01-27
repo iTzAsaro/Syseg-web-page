@@ -3,7 +3,7 @@ const { Blacklist } = require('../models');
 // Crear un nuevo registro en la lista negra
 exports.crear = async (req, res) => {
     try {
-        const { nombre, rut, recintos, fecha_bloqueo, motivo, evidencia_url } = req.body;
+        const { nombre, rut, recintos, fecha_bloqueo, motivo } = req.body;
         
         // Validar si ya existe
         const existente = await Blacklist.findOne({ where: { rut } });
@@ -16,8 +16,7 @@ exports.crear = async (req, res) => {
             rut,
             recintos,
             fecha_bloqueo,
-            motivo,
-            evidencia_url
+            motivo
         });
 
         res.status(201).send(registro);

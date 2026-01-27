@@ -19,8 +19,7 @@ export default function Blacklist() {
     recintos: '',
     fecha_ingreso: '',
     fecha_bloqueo: new Date().toISOString().split('T')[0],
-    motivo: '',
-    evidencia_url: ''
+    motivo: ''
   });
 
   useEffect(() => {
@@ -51,8 +50,7 @@ export default function Blacklist() {
         recintos: entry.recintos || '',
         fecha_ingreso: entry.fecha_ingreso || '',
         fecha_bloqueo: entry.fecha_bloqueo || '',
-        motivo: entry.motivo || '',
-        evidencia_url: entry.evidencia_url || ''
+        motivo: entry.motivo || ''
       });
     } else {
       setCurrentEntry(null);
@@ -62,8 +60,7 @@ export default function Blacklist() {
         recintos: '',
         fecha_ingreso: new Date().toISOString().split('T')[0],
         fecha_bloqueo: new Date().toISOString().split('T')[0],
-        motivo: '',
-        evidencia_url: ''
+        motivo: ''
       });
     }
     setIsModalOpen(true);

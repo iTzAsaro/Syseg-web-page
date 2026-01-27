@@ -14,7 +14,7 @@ const Blacklist = sequelize.define('Blacklist', {
     rut: {
         type: DataTypes.STRING(20),
         allowNull: false,
-        unique: true
+        unique: false
     },
     recintos: {
         type: DataTypes.STRING(255),
@@ -31,10 +31,6 @@ const Blacklist = sequelize.define('Blacklist', {
     motivo: {
         type: DataTypes.TEXT,
         allowNull: false
-    },
-    evidencia_url: {
-        type: DataTypes.STRING(255),
-        allowNull: true
     }
 }, {
     tableName: 'blacklist',
