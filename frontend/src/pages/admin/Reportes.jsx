@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar, 
   FileSpreadsheet, 
@@ -7,50 +7,53 @@ import {
   Box, 
   ShieldAlert, 
   Users, 
-  Activity 
+  Activity,
+  Loader
 } from 'lucide-react';
 import Layout from '../../components/Layout';
+import reporteService from '../../services/reporteService';
 
 /**
  * Componente Reportes
  * 
- * Este componente renderiza la vista de reportes estadísticos y auditoría.
- * Muestra gráficos de actividad, items más solicitados y una bitácora de eventos recientes.
+ * Este componente renderiza la vista de reportes estadísticos y auditoría con datos reales.
  */
 const Reportes = () => {
-    // Datos simulados para la gráfica de actividad semanal
-    const activityData = [
-        { day: 'Lun', val: 65 }, { day: 'Mar', val: 45 }, { day: 'Mié', val: 80 }, 
-        { day: 'Jue', val: 55 }, { day: 'Vie', val: 90 }, { day: 'Sáb', val: 30 }, { day: 'Dom', val: 20 }
-    ];
-
-    // Datos simulados para los productos más solicitados (Top 5)
-    const topItems = [
-        { name: 'Radio Motorola X1', cat: 'Comunicación', count: 142, max: 150 },
-        { name: 'Chaleco Reflectante', cat: 'EPP', count: 98, max: 150 },
-        { name: 'Linterna Táctica', cat: 'Iluminación', count: 85, max: 150 },
-        { name: 'Tablet Samsung', cat: 'Tecnología', count: 62, max: 150 },
-        { name: 'Botas Seguridad', cat: 'EPP', count: 45, max: 150 },
-    ];
-
-    // Estado para el filtro de reportes
+    const [loading, setLoading] = useState(true);
+    const [activityData, setActivityData] = useState([]);
+    const [topItems, setTopItems] = useState([]);
+    const [reportData, setReportData] = useState([]);
     const [filter, setFilter] = useState('all');
-    
-    // Datos simulados de reportes/eventos
-    const reportData = [
-        { id: 1, type: 'inventory', action: 'Retiro de Producto', detail: 'Radio Motorola X1', user: 'Carlos Ruiz', role: 'Supervisor', time: '10:45 AM', date: 'Hoy', status: 'success' },
-        { id: 2, type: 'security', action: 'Ingreso a Blacklist', detail: 'Roberto Díaz (RUT: 15.x)', user: 'Admin General', role: 'Admin', time: '09:30 AM', date: 'Hoy', status: 'critical' },
-        { id: 3, type: 'inventory', action: 'Ingreso de Stock', detail: '50 Chalecos', user: 'Carlos Ruiz', role: 'Supervisor', time: '08:15 AM', date: 'Hoy', status: 'success' },
-        { id: 4, type: 'personnel', action: 'Nuevo Guardia', detail: 'Ana López', user: 'Admin General', role: 'Admin', time: '18:30 PM', date: 'Ayer', status: 'info' },
-    ];
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const data = await reporteService.getDashboardStats();
+            setActivityData(data.activityData || []);
+            setTopItems(data.topItems || []);
+            setReportData(data.recentEvents || []);
+        } catch (error) {
+            console.error("Error cargando reportes:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Calcular el valor máximo para escalar la gráfica de actividad
+    const maxActivity = Math.max(
+        ...activityData.map(d => Math.max(d.ingresos, d.retiros)), 
+        10 // Valor mínimo para evitar división por cero
+    );
     
     // Filtrar los reportes según el tipo seleccionado
     const filteredReports = filter === 'all' ? reportData : reportData.filter(r => r.type === filter);
     
     /**
      * Obtiene los estilos (icono y colores) según el tipo de reporte.
-     * @param {string} type - Tipo de reporte (inventory, security, personnel, etc.)
-     * @returns {object} Objeto con el icono y clases de color.
      */
     const getTypeStyles = (type) => {
         switch(type) {
@@ -60,6 +63,16 @@ const Reportes = () => {
             default: return { icon: Activity, color: 'text-gray-600', bg: 'bg-gray-50' };
         }
     };
+
+    if (loading) {
+        return (
+            <Layout>
+                <div className="flex items-center justify-center h-[80vh]">
+                    <Loader className="w-10 h-10 text-gray-300 animate-spin" />
+                </div>
+            </Layout>
+        );
+    }
 
     return (
         <Layout>
@@ -82,10 +95,10 @@ const Reportes = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
-                    {/* 1. Actividad Semanal (Gráfico de barras simple) */}
+                    {/* 1. Actividad Semanal (Gráfico de barras) */}
                     <div className="lg:col-span-2 bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-lg shadow-gray-100/50">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-gray-900 text-lg">Actividad</h3>
+                            <h3 className="font-bold text-gray-900 text-lg">Actividad de Inventario (7 días)</h3>
                             <div className="flex gap-3 text-xs font-medium text-gray-500">
                                 <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-black mr-1"></span>Retiros</span>
                                 <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-red-600 mr-1"></span>Ingresos</span>
@@ -95,26 +108,51 @@ const Reportes = () => {
                         <div className="overflow-x-auto pb-2">
                             <div className="flex items-end justify-between h-48 gap-3 min-w-[300px]">
                                 {activityData.map((d, i) => (
-                                    <div key={i} className="flex flex-col items-center gap-2 flex-1 group cursor-pointer">
-                                        <div className="w-full bg-gray-50 rounded-t-lg relative h-full flex items-end overflow-hidden group-hover:bg-gray-100 transition-colors">
-                                            <div className="w-full bg-black relative transition-all duration-500" style={{ height: `${d.val}%` }}></div>
-                                            <div className="absolute bottom-0 w-full bg-red-600 z-10 transition-all duration-500" style={{ height: `${d.val * 0.4}%` }}></div>
+                                    <div key={i} className="flex flex-col items-center gap-2 flex-1 group cursor-pointer h-full justify-end">
+                                        <div className="w-full bg-gray-50 rounded-t-lg relative flex items-end justify-center gap-1 group-hover:bg-gray-100 transition-colors h-full px-1 pt-2">
+                                            {/* Retiros Bar (Black) */}
+                                            <div 
+                                                className="w-3 bg-black rounded-t-sm transition-all duration-500 hover:opacity-80 relative group/bar"
+                                                style={{ height: `${(d.retiros / maxActivity) * 100}%` }}
+                                            >
+                                                 {d.retiros > 0 && (
+                                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20">
+                                                        -{d.retiros}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {/* Ingresos Bar (Red) */}
+                                            <div 
+                                                className="w-3 bg-red-600 rounded-t-sm transition-all duration-500 hover:opacity-80 relative group/bar"
+                                                style={{ height: `${(d.ingresos / maxActivity) * 100}%` }}
+                                            >
+                                                {d.ingresos > 0 && (
+                                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20">
+                                                        +{d.ingresos}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         <span className="text-[10px] font-bold text-gray-400 uppercase">{d.day}</span>
                                     </div>
                                 ))}
+                                {activityData.length === 0 && (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+                                        No hay datos de actividad reciente
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    {/* 2. Top 5 - Diseño "Tarjeta de Progreso" */}
+                    {/* 2. Top 5 - Productos Más Solicitados */}
                     <div className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-lg shadow-gray-100/50">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="font-bold text-gray-900 text-lg">Más Solicitados</h3>
                             <Trophy className="w-5 h-5 text-yellow-500" />
                         </div>
                         <div className="space-y-3">
-                            {topItems.map((item, i) => (
+                            {topItems.length > 0 ? topItems.map((item, i) => (
                                 <div key={i} className="relative w-full bg-gray-50 rounded-xl overflow-hidden h-14 flex items-center px-4 hover:bg-gray-100 transition-colors">
                                     {/* Barra de fondo con animación */}
                                     <div 
@@ -131,24 +169,48 @@ const Reportes = () => {
                                         <div className="flex items-center gap-3">
                                             <span className={`text-xs font-black ${i < 3 ? 'text-black' : 'text-gray-400'}`}>#{i + 1}</span>
                                             <div className="flex flex-col">
-                                                <span className="text-xs font-bold text-gray-900 leading-none">{item.name}</span>
+                                                <span className="text-xs font-bold text-gray-900 leading-none truncate max-w-[120px]">{item.name}</span>
                                                 <span className="text-[9px] text-gray-500 uppercase mt-0.5">{item.cat}</span>
                                             </div>
                                         </div>
                                         <span className="text-xs font-black text-gray-900">{item.count}</span>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="text-center py-8 text-gray-400 text-sm">
+                                    No hay datos de productos
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* 3. Bitácora (Timeline compacta) */}
                     <div className="lg:col-span-3 bg-white rounded-3xl border border-gray-100 shadow-lg shadow-gray-100/50 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                             <h3 className="font-bold text-gray-900 text-lg">Últimos Eventos</h3>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => setFilter('all')}
+                                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${filter === 'all' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                >
+                                    Todos
+                                </button>
+                                <button 
+                                    onClick={() => setFilter('inventory')}
+                                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${filter === 'inventory' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                >
+                                    Inv
+                                </button>
+                                <button 
+                                    onClick={() => setFilter('security')}
+                                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${filter === 'security' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                >
+                                    Seg
+                                </button>
+                            </div>
                         </div>
-                        <div className="divide-y divide-gray-50">
-                            {filteredReports.map((report) => {
+                        <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto custom-scrollbar">
+                            {filteredReports.length > 0 ? filteredReports.map((report) => {
                                 const style = getTypeStyles(report.type);
                                 const Icon = style.icon;
                                 return (
@@ -159,12 +221,15 @@ const Reportes = () => {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
                                                 <h4 className="font-bold text-gray-900 text-sm truncate">{report.action}</h4>
-                                                <span className="text-[10px] text-gray-400 font-mono">{report.time}</span>
+                                                <span className="text-[10px] text-gray-400 font-mono">{report.date} {report.time}</span>
                                             </div>
-                                            <p className="text-xs text-gray-600 mt-0.5 truncate">{report.detail}</p>
+                                            <p className="text-xs text-gray-600 mt-0.5 truncate">{report.detail || 'Sin detalles'}</p>
                                             <div className="flex items-center gap-2 mt-2">
                                                 <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
                                                     <UserCheck className="w-3 h-3" /> {report.user}
+                                                </span>
+                                                <span className="bg-gray-50 text-gray-400 px-2 py-0.5 rounded text-[10px] border border-gray-100">
+                                                    {report.role}
                                                 </span>
                                                 {report.status === 'critical' && (
                                                     <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold">CRÍTICO</span>
@@ -173,7 +238,11 @@ const Reportes = () => {
                                         </div>
                                     </div>
                                 );
-                            })}
+                            }) : (
+                                <div className="p-8 text-center text-gray-400 text-sm">
+                                    No se encontraron eventos recientes
+                                </div>
+                            )}
                         </div>
                     </div>
 

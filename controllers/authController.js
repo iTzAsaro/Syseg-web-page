@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { Usuario, Guardia, Rol } = require('../models');
+const { Usuario, Guardia, Rol, Permiso } = require('../models');
 
 // Inicio de Sesión Web (Administradores)
 exports.iniciarSesionWeb = async (req, res) => {
