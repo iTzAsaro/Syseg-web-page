@@ -1,10 +1,10 @@
-const { verifyToken, isAdmin } = require('../middleware/authJwt');
+const { verifyToken, hasPermission } = require('../middleware/authJwt');
 const controller = require('../controllers/bitacoraController');
 
 module.exports = function(app) {
-    // Crear registro (puede ser llamado desde frontend para eventos de usuario)
-    app.post("/api/bitacora", [verifyToken], controller.create);
+    // Crear registro
+    app.post("/api/bitacora", [verifyToken, hasPermission('CREAR_BITACORA')], controller.create);
 
-    // Obtener logs (Solo Admin por ahora, o quien tenga permiso)
-    app.get("/api/bitacora", [verifyToken], controller.buscarTodos);
+    // Obtener logs
+    app.get("/api/bitacora", [verifyToken, hasPermission('VER_BITACORA')], controller.buscarTodos);
 };

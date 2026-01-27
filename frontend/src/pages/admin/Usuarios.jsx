@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import usuarioService from '../../services/usuarioService';
+import RequirePermission from '../../components/RequirePermission';
 import Swal from 'sweetalert2';
 
 const Usuarios = () => {
@@ -285,27 +286,33 @@ const Usuarios = () => {
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex justify-end gap-2">
-                                                <button 
-                                                    onClick={() => handleOpenPermisosModal(user)}
-                                                    className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                                                    title="Gestionar Permisos"
-                                                >
-                                                    <Shield size={18} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleOpenModal(user)}
-                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title="Editar"
-                                                >
-                                                    <Edit size={18} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleDelete(user)}
-                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Eliminar"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                <RequirePermission permission="GESTIONAR_PERMISOS">
+                                                    <button 
+                                                        onClick={() => handleOpenPermisosModal(user)}
+                                                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                                        title="Gestionar Permisos"
+                                                    >
+                                                        <Shield size={18} />
+                                                    </button>
+                                                </RequirePermission>
+                                                <RequirePermission permission="EDITAR_USUARIO">
+                                                    <button 
+                                                        onClick={() => handleOpenModal(user)}
+                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit size={18} />
+                                                    </button>
+                                                </RequirePermission>
+                                                <RequirePermission permission="ELIMINAR_USUARIO">
+                                                    <button 
+                                                        onClick={() => handleDelete(user)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </RequirePermission>
                                             </div>
                                         </td>
                                     </tr>
@@ -344,7 +351,14 @@ const Usuarios = () => {
 
             {/* Modal Crear/Editar Usuario */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-300"
+                    style={{
+                        backgroundColor: 'var(--overlay-fallback-color)',
+                        backdropFilter: 'blur(var(--overlay-blur-intensity))',
+                        WebkitBackdropFilter: 'blur(var(--overlay-blur-intensity))'
+                    }}
+                >
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-gray-800">
@@ -432,7 +446,14 @@ const Usuarios = () => {
 
             {/* Modal Gestión de Permisos */}
             {isPermisosModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-300"
+                    style={{
+                        backgroundColor: 'var(--overlay-fallback-color)',
+                        backdropFilter: 'blur(var(--overlay-blur-intensity))',
+                        WebkitBackdropFilter: 'blur(var(--overlay-blur-intensity))'
+                    }}
+                >
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-gray-800">
@@ -467,7 +488,7 @@ const Usuarios = () => {
                                             }`}>
                                                 {selectedPermisos.includes(permiso.id) && <Check size={14} className="text-white" />}
                                             </div>
-                                            <span className="text-sm font-medium text-gray-700">{permiso.nombre}</span>
+                                            <span className="text-sm font-medium text-gray-700">{permiso.descripcion || permiso.codigo}</span>
                                         </div>
                                     </div>
                                 ))}

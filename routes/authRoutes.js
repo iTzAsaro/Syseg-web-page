@@ -14,4 +14,5 @@ module.exports = function(app) {
     // Rutas de Autenticación
     app.post("/api/auth/signin/web", controller.iniciarSesionWeb); // Login para plataforma web
     app.post("/api/auth/signin/app", controller.iniciarSesionApp); // Login para aplicación móvil
+    app.get("/api/auth/verify", [verifyToken], controller.verificarToken); // Verificar token
 };

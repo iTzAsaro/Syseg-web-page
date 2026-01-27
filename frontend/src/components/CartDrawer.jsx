@@ -21,7 +21,12 @@ const CartDrawer = () => {
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Overlay Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+        className="absolute inset-0 transition-opacity duration-300 animate-in fade-in"
+        style={{
+            backgroundColor: 'var(--overlay-fallback-color)',
+            backdropFilter: 'blur(var(--overlay-blur-intensity))',
+            WebkitBackdropFilter: 'blur(var(--overlay-blur-intensity))'
+        }}
         onClick={toggleCart}
       />
 

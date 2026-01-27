@@ -5,6 +5,7 @@ import {
 import Layout from '../../components/Layout';
 import ProductModal from '../../components/ProductModal';
 import { useCart } from '../../context/CartContext';
+import RequirePermission from '../../components/RequirePermission';
 
 // --- VISTA: INVENTARIO CON CARRITO Y MODAL ---
 const Inventario = () => {
@@ -90,13 +91,15 @@ const Inventario = () => {
             <p className="text-gray-500 mt-1 text-sm sm:text-base">Control de existencias y asignación de equipos</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-              <button 
-                  onClick={handleAddNew}
-                  className="bg-black text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-900 transition-all shadow-lg shadow-black/20 flex items-center justify-center gap-2 transform active:scale-95"
-              >
-                  <Plus className="w-4 h-4" /> 
-                  Nuevo / Ingreso
-              </button>
+              <RequirePermission permission="CREAR_PRODUCTO">
+                  <button 
+                      onClick={handleAddNew}
+                      className="bg-black text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-900 transition-all shadow-lg shadow-black/20 flex items-center justify-center gap-2 transform active:scale-95"
+                  >
+                      <Plus className="w-4 h-4" /> 
+                      Nuevo / Ingreso
+                  </button>
+              </RequirePermission>
           </div>
         </div>
 
@@ -162,30 +165,36 @@ const Inventario = () => {
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2">
-                                        <button 
-                                          onClick={() => addToCart(item)}
-                                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-600 hover:text-white transition-all text-xs font-bold border border-red-100"
-                                        >
-                                            <ShoppingCart className="w-3.5 h-3.5" />
-                                            Retirar
-                                        </button>
-                                        
-                                        <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                                        <RequirePermission permission="AJUSTAR_STOCK">
+                                            <button 
+                                              onClick={() => addToCart(item)}
+                                              className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-600 hover:text-white transition-all text-xs font-bold border border-red-100"
+                                            >
+                                                <ShoppingCart className="w-3.5 h-3.5" />
+                                                Retirar
+                                            </button>
+                                            
+                                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                                        </RequirePermission>
 
-                                        <button 
-                                          onClick={() => handleEdit(item)}
-                                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                          title="Editar Producto y Stock"
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button 
-                                          onClick={() => handleDelete(item.id)}
-                                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                          title="Eliminar Producto"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <RequirePermission permission="EDITAR_PRODUCTO">
+                                            <button 
+                                              onClick={() => handleEdit(item)}
+                                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                              title="Editar Producto y Stock"
+                                            >
+                                                <Edit className="w-4 h-4" />
+                                            </button>
+                                        </RequirePermission>
+                                        <RequirePermission permission="ELIMINAR_PRODUCTO">
+                                            <button 
+                                              onClick={() => handleDelete(item.id)}
+                                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                              title="Eliminar Producto"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </RequirePermission>
                                     </div>
                                 </td>
                             </tr>
@@ -237,27 +246,33 @@ const Inventario = () => {
 
                             {/* Botones de Acción */}
                             <div className="flex items-center gap-3 pl-2">
-                                <button 
-                                  onClick={() => addToCart(item)}
-                                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all text-sm font-bold shadow-md shadow-red-200 active:scale-95 active:shadow-none"
-                                >
-                                    <ShoppingCart className="w-4 h-4" />
-                                    Retirar
-                                </button>
-                                <button 
-                                  onClick={() => handleEdit(item)}
-                                  className="p-3 text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 rounded-xl transition-colors border border-gray-200 hover:border-blue-200 active:scale-95 shadow-sm"
-                                  title="Editar"
-                                >
-                                    <Edit className="w-5 h-5" />
-                                </button>
-                                <button 
-                                  onClick={() => handleDelete(item.id)}
-                                  className="p-3 text-gray-500 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-xl transition-colors border border-gray-200 hover:border-red-200 active:scale-95 shadow-sm"
-                                  title="Eliminar"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
+                                <RequirePermission permission="AJUSTAR_STOCK">
+                                    <button 
+                                      onClick={() => addToCart(item)}
+                                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all text-sm font-bold shadow-md shadow-red-200 active:scale-95 active:shadow-none"
+                                    >
+                                        <ShoppingCart className="w-4 h-4" />
+                                        Retirar
+                                    </button>
+                                </RequirePermission>
+                                <RequirePermission permission="EDITAR_PRODUCTO">
+                                    <button 
+                                      onClick={() => handleEdit(item)}
+                                      className="p-3 text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 rounded-xl transition-colors border border-gray-200 hover:border-blue-200 active:scale-95 shadow-sm"
+                                      title="Editar"
+                                    >
+                                        <Edit className="w-5 h-5" />
+                                    </button>
+                                </RequirePermission>
+                                <RequirePermission permission="ELIMINAR_PRODUCTO">
+                                    <button 
+                                      onClick={() => handleDelete(item.id)}
+                                      className="p-3 text-gray-500 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-xl transition-colors border border-gray-200 hover:border-red-200 active:scale-95 shadow-sm"
+                                      title="Eliminar"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                </RequirePermission>
                             </div>
                         </div>
                     ))}

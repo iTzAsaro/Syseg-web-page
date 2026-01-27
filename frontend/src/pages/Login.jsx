@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import api from '../api/axios';
-import { useNavigate } from 'react-router-dom';
+import AuthService from '../services/authService';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import SysegLogoImg from '../assets/syseg_logo.svg';
 
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   // Estado para controlar el modo de vista (false: Supervisor, true: Guardia)
   const [isGuardMode, setIsGuardMode] = useState(false);
   
@@ -32,17 +35,14 @@ export default function Login() {
 
     try {
       // Petición de login para administradores/supervisores
-      const response = await api.post('/auth/signin/web', {
-        email: emailSup,
-        password: passSup
-      });
-      console.log('Sup Login Exitoso:', response.data);
-      // Almacenamiento del token y datos de usuario en localStorage
-      localStorage.setItem('token', response.data.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.data));
+      const response = await AuthService.loginWeb(emailSup, passSup);
+      console.log('Sup Login Exitoso:', response);
+      // Usar función de login del contexto
+      login(response, response.accessToken);
       
-      // Redirección al dashboard de administrador
-      navigate('/admin/dashboard');
+      // Redirección al dashboard de administrador o a la URL original
+      const from = location.state?.from?.pathname || '/admin/dashboard';
+      navigate(from, { replace: true });
     } catch (err) {
       console.error('Error Login Sup:', err);
       // Manejo de errores desde el backend o genéricos
@@ -60,17 +60,15 @@ export default function Login() {
 
     try {
       // Petición de login para la aplicación móvil/operativa (Guardias)
-      const response = await api.post('/auth/signin/app', {
-        rut: rutGuard,
-        password: passGuard
-      });
-      console.log('Guard Login Exitoso:', response.data);
-      // Almacenamiento del token y datos de usuario en localStorage
-      localStorage.setItem('token', response.data.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.data));
+      const response = await AuthService.loginApp(rutGuard, passGuard);
+      console.log('Guard Login Exitoso:', response);
       
-      // Redirección al dashboard de guardia
-      navigate('/guardia/dashboard');
+      // Usar función de login del contexto
+      login(response, response.accessToken);
+      
+      // Redirección al dashboard de guardia o a la URL original
+      const from = location.state?.from?.pathname || '/guardia/dashboard';
+      navigate(from, { replace: true });
     } catch (err) {
       console.error('Error Login Guard:', err);
       // Manejo de errores desde el backend o genéricos

@@ -4,29 +4,37 @@ import {
   Home, Box, Users, FileText, Settings, LogOut, 
   ShieldCheck, FileSpreadsheet, UserX, X
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
+  const { hasPermission } = useAuth();
   const isActive = (path) => location.pathname === path;
 
   const menuItems = [
     { id: 'dashboard', label: 'Panel General', icon: Home, path: '/admin/dashboard' },
-    { id: 'inventory', label: 'Inventario', icon: Box, path: '/admin/inventory' },
-    // Placeholder paths for other items
-    { id: 'reports', label: 'Reportes', icon: FileText, path: '/admin/reports' },
-    { id: 'logs', label: 'Bitácora', icon: FileSpreadsheet, path: '/admin/logs' },
-    { id: 'users', label: 'Gestión de Usuarios', icon: Users, path: '/admin/users' },
-    { id: 'guards', label: 'Guardias', icon: ShieldCheck, path: '/admin/guards' },
-    { id: 'blacklist', label: 'Blacklist', icon: UserX, path: '/admin/blacklist' },
+    { id: 'inventory', label: 'Inventario', icon: Box, path: '/admin/inventory', permission: 'VER_INVENTARIO' },
+    { id: 'reports', label: 'Reportes', icon: FileText, path: '/admin/reports', permission: 'VER_REPORTES' },
+    { id: 'logs', label: 'Bitácora', icon: FileSpreadsheet, path: '/admin/logs', permission: 'VER_BITACORA' },
+    { id: 'users', label: 'Gestión de Usuarios', icon: Users, path: '/admin/users', permission: 'VER_USUARIOS' },
+    { id: 'guards', label: 'Guardias', icon: ShieldCheck, path: '/admin/guards', permission: 'VER_GUARDIAS' },
+    { id: 'blacklist', label: 'Blacklist', icon: UserX, path: '/admin/blacklist', permission: 'VER_BLACKLIST' },
     { id: 'settings', label: 'Configuración', icon: Settings, path: '/admin/settings' },
   ];
+
+  const visibleMenuItems = menuItems.filter(item => !item.permission || hasPermission(item.permission));
 
   return (
     <>
       {/* --- OVERLAY MÓVIL --- */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 z-40 lg:hidden transition-opacity"
+          style={{
+            backgroundColor: 'var(--overlay-fallback-color)',
+            backdropFilter: 'blur(var(--overlay-blur-intensity))',
+            WebkitBackdropFilter: 'blur(var(--overlay-blur-intensity))'
+          }}
           onClick={onClose}
         />
       )}
@@ -60,7 +68,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
           <div className="mb-6">
             <p className="px-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3 mt-2">Principal</p>
-            {menuItems.slice(0, 6).map((item) => (
+            {visibleMenuItems.filter(i => ['dashboard', 'inventory', 'reports', 'logs', 'users', 'guards'].includes(i.id)).map((item) => (
                 <Link
                 key={item.id}
                 to={item.path}
@@ -86,7 +94,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           <div>
             <p className="px-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">Administración</p>
-            {menuItems.slice(6).map((item) => (
+            {visibleMenuItems.filter(i => ['blacklist', 'settings'].includes(i.id)).map((item) => (
                 <Link
                 key={item.id}
                 to={item.path}

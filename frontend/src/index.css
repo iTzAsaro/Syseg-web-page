@@ -5,6 +5,11 @@
   --font-sans: "Chakra Petch", sans-serif;
 }
 
+:root {
+  --overlay-blur-intensity: 5px;
+  --overlay-fallback-color: rgba(0, 0, 0, 0.5);
+}
+
 body {
   font-family: "Chakra Petch", sans-serif;
 }

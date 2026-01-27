@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import guardiaService from '../../services/guardiaService';
+import RequirePermission from '../../components/RequirePermission';
 
 const Guardias = () => {
     const [guards, setGuards] = useState([]);
@@ -138,12 +139,14 @@ const Guardias = () => {
                     <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Guardias</h2>
                     <p className="text-gray-500 mt-1 text-sm">Gestión de dotación</p>
                 </div>
-                <button 
-                    onClick={() => handleOpenModal()} 
-                    className="w-full md:w-auto bg-black text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-xl hover:bg-gray-900 active:scale-95 transition-transform"
-                >
-                    <UserPlus className="w-5 h-5" /> Nuevo Guardia
-                </button>
+                <RequirePermission permission="CREAR_GUARDIA">
+                    <button 
+                        onClick={() => handleOpenModal()} 
+                        className="w-full md:w-auto bg-black text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-xl hover:bg-gray-900 active:scale-95 transition-transform"
+                    >
+                        <UserPlus className="w-5 h-5" /> Nuevo Guardia
+                    </button>
+                </RequirePermission>
             </div>
 
             {/* Search & Filters */}
@@ -236,18 +239,22 @@ const Guardias = () => {
                         </div>
 
                         <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-2">
-                            <button 
-                                onClick={() => handleOpenModal(guard)} 
-                                className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-black hover:text-white hover:border-black transition-colors shadow-sm"
-                            >
-                                Ver / Editar
-                            </button>
-                            <button 
-                                onClick={(e) => handleDelete(guard.id, e)} 
-                                className="p-2.5 bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 rounded-xl transition-colors shadow-sm"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
+                            <RequirePermission permission="EDITAR_GUARDIA">
+                                <button 
+                                    onClick={() => handleOpenModal(guard)} 
+                                    className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-black hover:text-white hover:border-black transition-colors shadow-sm"
+                                >
+                                    Ver / Editar
+                                </button>
+                            </RequirePermission>
+                            <RequirePermission permission="ELIMINAR_GUARDIA">
+                                <button 
+                                    onClick={(e) => handleDelete(guard.id, e)} 
+                                    className="p-2.5 bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 rounded-xl transition-colors shadow-sm"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </RequirePermission>
                         </div>
                     </div>
                 ))}
@@ -255,7 +262,14 @@ const Guardias = () => {
 
             {/* MODAL GUARDIA */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
+                <div 
+                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 animate-in fade-in duration-200"
+                    style={{
+                        backgroundColor: 'var(--overlay-fallback-color)',
+                        backdropFilter: 'blur(var(--overlay-blur-intensity))',
+                        WebkitBackdropFilter: 'blur(var(--overlay-blur-intensity))'
+                    }}
+                >
                     <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh]">
                         
                         {/* Header Modal */}

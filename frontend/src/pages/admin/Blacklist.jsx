@@ -5,6 +5,7 @@ import {
 import Layout from '../../components/Layout';
 import blacklistService from '../../services/blacklistService';
 import Swal from 'sweetalert2';
+import RequirePermission from '../../components/RequirePermission';
 
 export default function Blacklist() {
   const [blacklist, setBlacklist] = useState([]);
@@ -135,12 +136,14 @@ export default function Blacklist() {
                 </h2>
                 <p className="text-gray-500 mt-1 text-sm">Gestión de personal bloqueado</p>
             </div>
-            <button 
-                onClick={() => handleOpenModal()} 
-                className="w-full md:w-auto bg-red-600 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-xl hover:bg-red-700 active:scale-95 transition-transform"
-            >
-                <ShieldAlert className="w-5 h-5" /> Agregar Bloqueo
-            </button>
+            <RequirePermission permission="GESTIONAR_BLACKLIST">
+                <button 
+                    onClick={() => handleOpenModal()} 
+                    className="w-full md:w-auto bg-red-600 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-xl hover:bg-red-700 active:scale-95 transition-transform"
+                >
+                    <ShieldAlert className="w-5 h-5" /> Agregar Bloqueo
+                </button>
+            </RequirePermission>
         </div>
 
         {/* Grid de Tarjetas */}
@@ -211,20 +214,24 @@ export default function Blacklist() {
 
                             {/* Footer Actions */}
                             <div className="pt-4 border-t border-gray-100 flex justify-end gap-2 mt-auto">
-                                <button 
-                                    onClick={() => handleOpenModal(record)} 
-                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                    title="Editar"
-                                >
-                                    <Edit className="w-4 h-4" />
-                                </button>
-                                <button 
-                                    onClick={() => handleDelete(record.id)} 
-                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Eliminar"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <RequirePermission permission="GESTIONAR_BLACKLIST">
+                                    <button 
+                                        onClick={() => handleOpenModal(record)} 
+                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Editar"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                    </button>
+                                </RequirePermission>
+                                <RequirePermission permission="GESTIONAR_BLACKLIST">
+                                    <button 
+                                        onClick={() => handleDelete(record.id)} 
+                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Eliminar"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </RequirePermission>
                             </div>
                         </div>
                     </div>
@@ -235,7 +242,14 @@ export default function Blacklist() {
 
       {/* MODAL FORMULARIO */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
+        <div 
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 animate-in fade-in duration-200"
+            style={{
+                backgroundColor: 'var(--overlay-fallback-color)',
+                backdropFilter: 'blur(var(--overlay-blur-intensity))',
+                WebkitBackdropFilter: 'blur(var(--overlay-blur-intensity))'
+            }}
+        >
             <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-auto max-h-[90vh] animate-in slide-in-from-bottom-10 duration-300">
                 {/* Modal Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10 shrink-0">

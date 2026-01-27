@@ -95,3 +95,58 @@ exports.iniciarSesionApp = async (req, res) => {
         res.status(500).send({ message: error.message });
     }
 };
+
+// Verificar Token (Endpoint para validar sesión)
+exports.verificarToken = async (req, res) => {
+    try {
+        if (req.userType === 'usuario') {
+            const usuario = await Usuario.findByPk(req.userId, {
+                include: [
+                    { model: Rol },
+                    { 
+                        model: Permiso,
+                        attributes: ['codigo'],
+                        through: { attributes: [] }
+                    }
+                ],
+                attributes: ['id', 'nombre', 'email', 'rol_id', 'estado']
+            });
+            
+            if (!usuario || !usuario.estado) {
+                return res.status(401).send({ message: "Usuario no encontrado o inactivo." });
+            }
+
+            const permisos = usuario.Permisos ? usuario.Permisos.map(p => p.codigo) : [];
+
+            res.status(200).send({
+                id: usuario.id,
+                nombre: usuario.nombre,
+                email: usuario.email,
+                roles: usuario.Rol ? usuario.Rol.nombre : null,
+                permisos: permisos,
+                type: 'usuario'
+                // No devolvemos nuevo token, solo validamos el actual
+            });
+        } else if (req.userType === 'guardia') {
+            const guardia = await Guardia.findByPk(req.userId, {
+                attributes: ['id', 'nombre', 'rut', 'activo_app']
+            });
+
+            if (!guardia || !guardia.activo_app) {
+                return res.status(401).send({ message: "Guardia no encontrado o inactivo." });
+            }
+
+            res.status(200).send({
+                id: guardia.id,
+                nombre: guardia.nombre,
+                rut: guardia.rut,
+                roles: 'Guardia',
+                type: 'guardia'
+            });
+        } else {
+            res.status(400).send({ message: "Tipo de usuario desconocido." });
+        }
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+};

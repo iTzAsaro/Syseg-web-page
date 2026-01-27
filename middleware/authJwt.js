@@ -1,4 +1,49 @@
 const jwt = require('jsonwebtoken');
+const { Usuario, Permiso } = require('../models');
+
+// Middleware: Verificar si el usuario tiene un permiso específico
+const hasPermission = (requiredPermission) => {
+    return async (req, res, next) => {
+        try {
+            // Si es guardia, no tiene permisos granulares por ahora (o definimos lógica aparte)
+            if (req.userType === 'guardia') {
+                 // Podríamos permitir ciertas cosas a guardias, pero por ahora denegamos si requiere permiso granular
+                 // O, si queremos que los guardias tengan ciertos permisos implícitos, manejarlo aquí.
+                 return res.status(403).send({ message: "No tiene permisos para realizar esta acción." });
+            }
+
+            const usuario = await Usuario.findByPk(req.userId, {
+                include: [{
+                    model: Permiso,
+                    attributes: ['codigo'],
+                    through: { attributes: [] }
+                }]
+            });
+
+            if (!usuario) {
+                return res.status(404).send({ message: "Usuario no encontrado." });
+            }
+
+            // Si es Admin (Rol 1), tiene acceso total (bypass)
+            if (usuario.rol_id === 1) {
+                next();
+                return;
+            }
+
+            // Verificar si tiene el permiso requerido
+            const userPermissions = usuario.Permisos.map(p => p.codigo);
+            if (userPermissions.includes(requiredPermission)) {
+                next();
+                return;
+            }
+
+            res.status(403).send({ message: `Requiere permiso: ${requiredPermission}` });
+
+        } catch (error) {
+            res.status(500).send({ message: error.message });
+        }
+    };
+};
 
 const verifyToken = (req, res, next) => {
     const token = req.headers['authorization'];
@@ -44,5 +89,6 @@ const isAdmin = (req, res, next) => {
 
 module.exports = {
     verifyToken,
-    isAdmin
+    isAdmin,
+    hasPermission
 };

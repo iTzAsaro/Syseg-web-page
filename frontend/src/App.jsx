@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import CartDrawer from './components/CartDrawer';
 import Login from './pages/Login';
 import DashboardAdmin from './pages/admin/Dashboard';
@@ -17,27 +19,32 @@ function App() {
   return (
     <CartProvider>
       <Router>
-        <CartDrawer />
-        <Routes>
-          {/* Ruta para el Login como punto de entrada */}
-          <Route path="/" element={<Login />} />
-          
-          {/* Rutas de Administración */}
-          <Route path="/admin/dashboard" element={<DashboardAdmin />} />
-          <Route path="/admin/inventory" element={<InventarioAdmin />} />
-          <Route path="/admin/reports" element={<ReportesAdmin />} />
-          <Route path="/admin/logs" element={<BitacoraAdmin />} />
-          <Route path="/admin/guards" element={<GuardiasAdmin />} />
-          <Route path="/admin/users" element={<UsuariosAdmin />} />
-          <Route path="/admin/blacklist" element={<BlacklistAdmin />} />
-          <Route path="/admin/settings" element={<PlaceholderPage title="Configuración" />} />
-          
-          {/* Rutas de Guardia */}
-          <Route path="/guardia/dashboard" element={<DashboardGuardia />} />
-          
-          {/* Redirección por defecto si la ruta no existe (Opcional) */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <AuthProvider>
+          <CartDrawer />
+          <Routes>
+            {/* Ruta pública: Login */}
+            <Route path="/" element={<Login />} />
+            
+            {/* Rutas Protegidas */}
+            <Route element={<ProtectedRoute />}>
+              {/* Rutas de Administración */}
+              <Route path="/admin/dashboard" element={<DashboardAdmin />} />
+              <Route path="/admin/inventory" element={<InventarioAdmin />} />
+              <Route path="/admin/reports" element={<ReportesAdmin />} />
+              <Route path="/admin/logs" element={<BitacoraAdmin />} />
+              <Route path="/admin/guards" element={<GuardiasAdmin />} />
+              <Route path="/admin/users" element={<UsuariosAdmin />} />
+              <Route path="/admin/blacklist" element={<BlacklistAdmin />} />
+              <Route path="/admin/settings" element={<PlaceholderPage title="Configuración" />} />
+              
+              {/* Rutas de Guardia */}
+              <Route path="/guardia/dashboard" element={<DashboardGuardia />} />
+            </Route>
+            
+            {/* Redirección por defecto */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AuthProvider>
       </Router>
     </CartProvider>
   );
