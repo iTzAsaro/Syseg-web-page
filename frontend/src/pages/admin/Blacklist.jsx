@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Ban, UserX, Store, Calendar, Edit, Trash2, X, Plus, AlertTriangle, ShieldAlert
-} from 'lucide-react';
+import { Ban, UserX, Store, Calendar, Edit, Trash2, X, Plus, AlertTriangle, ShieldAlert} from 'lucide-react';
 import Layout from '../../components/Layout';
 import blacklistService from '../../services/blacklistService';
 import Swal from 'sweetalert2';
