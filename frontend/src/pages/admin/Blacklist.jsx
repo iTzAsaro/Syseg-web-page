@@ -13,6 +13,10 @@ export default function Blacklist() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEntry, setCurrentEntry] = useState(null);
   
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 27;
+
   // Estado del formulario
   const [formData, setFormData] = useState({
     nombre: '',
@@ -26,6 +30,14 @@ export default function Blacklist() {
   useEffect(() => {
     fetchBlacklist();
   }, []);
+
+  // Ajustar página si los items cambian y la página actual queda vacía
+  useEffect(() => {
+    const total = Math.ceil(blacklist.length / itemsPerPage);
+    if (currentPage > total && total > 0) {
+        setCurrentPage(total);
+    }
+  }, [blacklist, currentPage]);
 
   const fetchBlacklist = async () => {
     try {
@@ -121,6 +133,40 @@ export default function Blacklist() {
     }
   };
 
+  // Cálculos de paginación
+  const totalPages = Math.ceil(blacklist.length / itemsPerPage);
+  const currentItems = blacklist.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const getPageNumbers = () => {
+    const delta = 1;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+            range.push(i);
+        }
+    }
+
+    for (let i of range) {
+        if (l) {
+            if (i - l === 2) {
+                rangeWithDots.push(l + 1);
+            } else if (i - l !== 1) {
+                rangeWithDots.push('...');
+            }
+        }
+        rangeWithDots.push(i);
+        l = i;
+    }
+
+    return rangeWithDots;
+  };
+
   return (
     <Layout>
       <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -160,8 +206,9 @@ export default function Blacklist() {
                 <p className="text-gray-500 mt-1">La lista de bloqueos está vacía.</p>
             </div>
         ) : (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {blacklist.map((record) => (
+                {currentItems.map((record) => (
                     <div key={record.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group relative flex flex-col">
                         {/* Borde Rojo Izquierdo */}
                         <div className="absolute top-0 left-0 w-1.5 h-full bg-red-600"></div>
@@ -237,6 +284,63 @@ export default function Blacklist() {
                     </div>
                 ))}
             </div>
+
+            {/* Paginación */}
+            {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center mt-6 pt-4 border-t border-gray-100 gap-4">
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <span>Mostrando {currentItems.length} de {blacklist.length} registros</span>
+                        <select 
+                            value={currentPage} 
+                            onChange={(e) => setCurrentPage(Number(e.target.value))}
+                            className="bg-gray-50 border border-gray-200 rounded-lg text-xs py-1 px-2 focus:ring-2 focus:ring-red-500 outline-none"
+                        >
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                                <option key={pageNum} value={pageNum}>Pág. {pageNum}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 text-sm font-medium transition-colors text-gray-600"
+                        >
+                            Anterior
+                        </button>
+                        
+                        <div className="hidden sm:flex items-center gap-1 mx-2">
+                            {getPageNumbers().map((pageNum, idx) => (
+                                pageNum === '...' ? (
+                                    <span key={`dots-${idx}`} className="text-gray-400 px-1 text-xs">...</span>
+                                ) : (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
+                                            currentPage === pageNum 
+                                            ? 'bg-red-600 text-white shadow-md shadow-red-200' 
+                                            : 'text-gray-600 hover:bg-gray-100 hover:text-red-600'
+                                        }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                )
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1.5 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 text-sm font-medium transition-colors text-gray-600"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
+            </>
         )}
       </div>
 
