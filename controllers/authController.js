@@ -8,7 +8,14 @@ exports.iniciarSesionWeb = async (req, res) => {
 
         const usuario = await Usuario.findOne({
             where: { email: email },
-            include: Rol
+            include: [
+                { model: Rol },
+                { 
+                    model: Permiso,
+                    attributes: ['codigo'],
+                    through: { attributes: [] }
+                }
+            ]
         });
 
         if (!usuario) {
@@ -33,11 +40,15 @@ exports.iniciarSesionWeb = async (req, res) => {
             expiresIn: 86400 // 24 horas
         });
 
+        const permisos = usuario.Permisos ? usuario.Permisos.map(p => p.codigo) : [];
+
         res.status(200).send({
             id: usuario.id,
             nombre: usuario.nombre,
             email: usuario.email,
             roles: usuario.Rol ? usuario.Rol.nombre : null,
+            rol_id: usuario.rol_id,
+            permisos: permisos,
             accessToken: token
         });
     } catch (error) {

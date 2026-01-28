@@ -34,9 +34,22 @@ export default function Login() {
     setErrorSup('');
 
     try {
+      // Limpiar espacios en blanco
+      const email = emailSup.trim();
+      const password = passSup.trim();
+
+      if (!email || !password) {
+        throw new Error('Por favor, ingrese correo y contraseña.');
+      }
+
       // Petición de login para administradores/supervisores
-      const response = await AuthService.loginWeb(emailSup, passSup);
+      const response = await AuthService.loginWeb(email, password);
       console.log('Sup Login Exitoso:', response);
+
+      if (!response.accessToken) {
+        throw new Error('Respuesta del servidor inválida: Falta token de acceso.');
+      }
+
       // Usar función de login del contexto
       login(response, response.accessToken);
       
@@ -44,9 +57,23 @@ export default function Login() {
       const from = location.state?.from?.pathname || '/admin/dashboard';
       navigate(from, { replace: true });
     } catch (err) {
-      console.error('Error Login Sup:', err);
-      // Manejo de errores desde el backend o genéricos
-      setErrorSup(err.response?.data?.message || 'Error al iniciar sesión');
+      console.error('Error Login Sup Completo:', err);
+      // Manejo de errores detallado
+      let errorMsg = 'Error al iniciar sesión';
+      
+      if (err.response) {
+        // Error de respuesta del servidor (4xx, 5xx)
+        errorMsg = err.response.data?.message || `Error del servidor (${err.response.status})`;
+        console.error('Datos error servidor:', err.response.data);
+      } else if (err.request) {
+        // No hubo respuesta (problema de red)
+        errorMsg = 'No se pudo conectar con el servidor. Verifique su conexión.';
+      } else {
+        // Error en la configuración de la petición o validación local
+        errorMsg = err.message;
+      }
+      
+      setErrorSup(errorMsg);
     } finally {
       setIsLoadingSup(false);
     }

@@ -1,6 +1,49 @@
 const { Op, Sequelize } = require('sequelize');
-const { MovimientoInventario, Producto, Categoria, Bitacora, Usuario, Rol } = require('../models');
+const { MovimientoInventario, Producto, Categoria, Bitacora, Usuario, Rol, Guardia } = require('../models');
 const sequelize = require('../config/database');
+
+/**
+ * Obtener resumen operativo (KPIs) para el dashboard principal
+ */
+exports.getResumenOperativo = async (req, res) => {
+    try {
+        // 1. Total Artículos
+        const totalProductos = await Producto.count();
+
+        // 2. Guardias Activos (Habilitados App)
+        const guardiasActivos = await Guardia.count({ where: { activo_app: true } });
+
+        // 3. Stock Crítico (Actual <= Mínimo)
+        const stockCritico = await Producto.count({
+            where: {
+                stock_actual: {
+                    [Op.lte]: sequelize.col('stock_minimo')
+                }
+            }
+        });
+
+        // 4. Retiros Hoy (Salidas con fecha >= inicio de hoy)
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const retirosHoy = await MovimientoInventario.count({
+            where: {
+                cantidad: { [Op.lt]: 0 }, // Salidas (cantidad negativa)
+                fecha_hora: { [Op.gte]: startOfDay }
+            }
+        });
+
+        res.status(200).send({
+            totalProductos,
+            guardiasActivos,
+            stockCritico,
+            retirosHoy
+        });
+    } catch (error) {
+        console.error("Error obteniendo resumen operativo:", error);
+        res.status(500).send({ message: error.message });
+    }
+};
 
 /**
  * Obtener estadísticas para el dashboard de reportes
@@ -76,36 +119,40 @@ exports.getDashboardStats = async (req, res) => {
         const maxCount = topItems.length > 0 ? Math.max(...topItems.map(i => i.count)) : 100;
         topItems.forEach(i => i.max = maxCount * 1.2); // Un poco más del maximo para margen
 
-        // 3. Últimos Eventos (Bitácora)
-        const bitacora = await Bitacora.findAll({
-            limit: 10,
-            order: [['fecha', 'DESC']],
+        // 3. Top Usuarios (Más retiros)
+        const topUsersQuery = await MovimientoInventario.findAll({
+            where: {
+                cantidad: { [Op.lt]: 0 } // Solo salidas
+            },
+            attributes: [
+                'usuario_id',
+                [sequelize.fn('SUM', sequelize.literal('ABS(cantidad)')), 'total_retirado'],
+                [sequelize.fn('COUNT', sequelize.col('MovimientoInventario.id')), 'total_movimientos']
+            ],
             include: [{
                 model: Usuario,
-                attributes: ['nombre'],
+                attributes: ['nombre', 'email'],
                 include: [{
                     model: Rol,
                     attributes: ['nombre']
                 }]
-            }]
+            }],
+            group: ['usuario_id', 'Usuario.id', 'Usuario.nombre', 'Usuario.email', 'Usuario->Rol.id', 'Usuario->Rol.nombre'],
+            order: [[sequelize.literal('total_retirado'), 'DESC']],
+            limit: 5
         });
 
-        const recentEvents = bitacora.map(b => ({
-            id: b.id,
-            type: determineEventType(b.accion), // Helper para mapear acción a tipo visual
-            action: b.accion,
-            detail: b.detalles,
-            user: b.Usuario ? b.Usuario.nombre : b.autor,
-            role: b.Usuario && b.Usuario.Rol ? b.Usuario.Rol.nombre : 'Sistema',
-            time: new Date(b.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            date: new Date(b.fecha).toLocaleDateString(),
-            status: b.nivel === 'Critica' ? 'critical' : (b.nivel === 'Informativa' ? 'info' : 'success')
+        const topUsers = topUsersQuery.map(u => ({
+            name: u.Usuario ? u.Usuario.nombre : 'Usuario Eliminado',
+            role: u.Usuario && u.Usuario.Rol ? u.Usuario.Rol.nombre : 'Desconocido',
+            count: parseInt(u.get('total_retirado')),
+            transactions: parseInt(u.get('total_movimientos'))
         }));
 
         res.json({
             activityData,
             topItems,
-            recentEvents
+            topUsers
         });
 
     } catch (error) {

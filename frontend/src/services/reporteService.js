@@ -15,8 +15,20 @@ const getDashboardStats = async () => {
     return response.data;
 };
 
+/**
+ * Obtiene el resumen operativo (KPIs) para el dashboard principal.
+ * @returns {Promise<Object>} Objeto con totalProductos, guardiasActivos, stockCritico, retirosHoy.
+ */
+const getResumenOperativo = async () => {
+    // La ruta en el backend es /api/reportes/resumen, que coincide con API_URL + '/resumen'
+    // Asegurarse de que el backend tiene definida esta ruta.
+    const response = await axios.get(`${API_URL}/resumen`);
+    return response.data;
+};
+
 const reporteService = {
-    getDashboardStats
+    getDashboardStats,
+    getResumenOperativo
 };
 
 export default reporteService;

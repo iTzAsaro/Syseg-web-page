@@ -1,23 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Search, Filter, Plus, Box, Edit, Trash2, ShoppingCart 
+  Search, Filter, Plus, Box, Edit, Trash2, ShoppingCart, Download 
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import ProductModal from '../../components/ProductModal';
 import { useCart } from '../../context/CartContext';
 import RequirePermission from '../../components/RequirePermission';
+import productoService from '../../services/productoService';
+import Swal from 'sweetalert2';
+import * as XLSX from 'xlsx';
 
 // --- VISTA: INVENTARIO CON CARRITO Y MODAL ---
 const Inventario = () => {
   // Estado de los productos
-  const [products, setProducts] = useState([
-    { id: 1, name: 'Radio Motorola X1', category: 'Comunicación', sku: 'RAD-001', stock: 15, minStock: 5 },
-    { id: 2, name: 'Chaleco Reflectante', category: 'EPP', sku: 'EPP-004', stock: 4, minStock: 10 },
-    { id: 3, name: 'Linterna Táctica LED', category: 'Iluminación', sku: 'LIN-022', stock: 8, minStock: 8 },
-    { id: 4, name: 'Tablet Samsung Tab A', category: 'Tecnología', sku: 'TEC-101', stock: 12, minStock: 3 },
-    { id: 5, name: 'Llaves Maestras Set', category: 'Seguridad', sku: 'KEY-999', stock: 2, minStock: 2 },
-    { id: 6, name: 'Botas de Seguridad T42', category: 'EPP', sku: 'EPP-B42', stock: 20, minStock: 5 },
-  ]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const { addToCart } = useCart();
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,8 +23,32 @@ const Inventario = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
-  // Datos simulados de guardias para asignar
-  // const guards = ["Juan Pérez", "María González", "Pedro Silva", "Ana López"];
+  // Cargar productos desde el backend
+  const fetchProducts = async () => {
+      try {
+          setLoading(true);
+          const data = await productoService.getAll();
+          // Mapear datos si es necesario para ajustar nombres de propiedades
+          // Backend: nombre, stock_actual, stock_minimo, sku, categoria_id, Categoria.nombre
+          const mappedProducts = data.map(p => ({
+              ...p,
+              name: p.nombre,
+              stock: p.stock_actual,
+              minStock: p.stock_minimo,
+              category: p.Categoria ? p.Categoria.nombre : 'Sin Categoría'
+          }));
+          setProducts(mappedProducts);
+      } catch (error) {
+          console.error("Error cargando productos:", error);
+          Swal.fire('Error', 'No se pudieron cargar los productos.', 'error');
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  useEffect(() => {
+      fetchProducts();
+  }, []);
 
   // --- LÓGICA DE PRODUCTOS ---
   const handleAddNew = () => {
@@ -40,29 +61,79 @@ const Inventario = () => {
       setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
-      if (window.confirm('¿Estás seguro de eliminar este producto?')) {
-          setProducts(products.filter(p => p.id !== id));
+  const handleDelete = async (id) => {
+      if (await Swal.fire({
+          title: '¿Estás seguro?',
+          text: "No podrás revertir esto. Se eliminará el producto permanentemente.",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar'
+      }).then(result => result.isConfirmed)) {
+          try {
+              await productoService.delete(id);
+              setProducts(products.filter(p => p.id !== id));
+              Swal.fire('Eliminado', 'El producto ha sido eliminado.', 'success');
+          } catch (error) {
+              console.error("Error eliminando producto:", error);
+              Swal.fire('Error', 'No se pudo eliminar el producto.', 'error');
+          }
       }
   };
 
-  const handleSaveProduct = (productData) => {
-      if (editingProduct) {
-          // Editar existente
-          setProducts(products.map(p => p.id === productData.id ? productData : p));
-      } else {
-          // Crear nuevo
-          setProducts([...products, productData]);
+  const handleSaveProduct = async (productData) => {
+      try {
+          // Adaptar datos para el backend
+          const payload = {
+              nombre: productData.name,
+              stock_actual: parseInt(productData.stock),
+              stock_minimo: parseInt(productData.minStock),
+              sku: productData.sku,
+              descripcion: productData.description, // Asumiendo que el modal enviará description
+              precio: parseInt(productData.price),
+              costo: parseInt(productData.cost),
+              categoria_id: productData.categoryId // El modal debe enviar el ID
+          };
+
+          if (editingProduct) {
+              // Editar existente
+              await productoService.update(editingProduct.id, payload);
+              Swal.fire('Actualizado', 'Producto actualizado correctamente.', 'success');
+          } else {
+              // Crear nuevo
+              await productoService.create(payload);
+              Swal.fire('Creado', 'Producto creado correctamente.', 'success');
+          }
+          fetchProducts(); // Recargar lista
+          setIsModalOpen(false);
+      } catch (error) {
+          console.error("Error guardando producto:", error);
+          Swal.fire('Error', 'No se pudo guardar el producto.', 'error');
       }
-      setIsModalOpen(false);
   };
 
-
+  // Exportar a Excel
+  const handleExport = () => {
+      const ws = XLSX.utils.json_to_sheet(products.map(p => ({
+          ID: p.id,
+          Nombre: p.name,
+          SKU: p.sku,
+          Categoría: p.category,
+          Stock: p.stock,
+          'Stock Mínimo': p.minStock
+      })));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+      XLSX.writeFile(wb, "Inventario_Syseg.xlsx");
+  };
 
   // --- FILTROS ---
   const filteredProducts = products.filter(item => 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      item.category.toLowerCase().includes(searchTerm.toLowerCase())
+      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Helper visual para BADGES (Sin barras)
@@ -91,6 +162,13 @@ const Inventario = () => {
             <p className="text-gray-500 mt-1 text-sm sm:text-base">Control de existencias y asignación de equipos</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
+              <button 
+                  onClick={handleExport}
+                  className="bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                  <Download className="w-4 h-4" />
+                  Exportar
+              </button>
               <RequirePermission permission="CREAR_PRODUCTO">
                   <button 
                       onClick={handleAddNew}
@@ -132,9 +210,10 @@ const Inventario = () => {
                 <table className="w-full text-sm text-left whitespace-nowrap">
                     <thead className="bg-gray-50/50 text-gray-500 font-bold uppercase text-[11px] tracking-wider border-b border-gray-100">
                         <tr>
-                            <th className="px-6 py-4 w-1/3">Producto</th>
-                            <th className="px-6 py-4 w-1/3">Nivel de Stock</th>
-                            <th className="px-6 py-4 w-1/3 text-right">Acciones</th>
+                            <th className="px-6 py-4 w-1/4 align-middle">Producto</th>
+                            <th className="px-6 py-4 w-1/6 align-middle">SKU</th>
+                            <th className="px-6 py-4 w-1/6 align-middle">Nivel de Stock</th>
+                            <th className="px-6 py-4 w-1/6 text-right align-middle">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -152,6 +231,9 @@ const Inventario = () => {
                                             </span>
                                         </div>
                                     </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span className="text-sm text-gray-600 font-mono">{item.sku || '-'}</span>
                                 </td>
                                 <td className="px-6 py-4">
                                     {/* DISEÑO STOCK SIN BARRA */}

@@ -1,10 +1,25 @@
 import React from 'react';
 import { Menu, Bell, ChevronDown, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const Header = ({ onMenuClick }) => {
   const { getCartCount, toggleCart } = useCart();
+  const { user } = useAuth();
   const cartCount = getCartCount();
+
+  const getInitials = (name) => {
+    if (!name) return 'US';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const displayName = user?.nombre || 'Usuario';
+  const displayEmail = user?.email || '';
+  const displayInitials = getInitials(displayName);
 
   return (
     <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 shadow-sm shrink-0 z-30">
@@ -38,10 +53,10 @@ const Header = ({ onMenuClick }) => {
             <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
             <div className="flex items-center gap-3 pl-2 sm:pl-0 cursor-pointer hover:bg-gray-50 py-1.5 px-2 rounded-lg transition-colors">
                 <div className="text-right hidden md:block">
-                    <p className="text-sm font-bold text-gray-900">Admin General</p>
-                    <p className="text-xs text-gray-500">admin@syseg.cl</p>
+                    <p className="text-sm font-bold text-gray-900">{displayName}</p>
+                    <p className="text-xs text-gray-500">{displayEmail}</p>
                 </div>
-                <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold border-2 border-gray-100 shadow-sm ring-2 ring-gray-50">AD</div>
+                <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold border-2 border-gray-100 shadow-sm ring-2 ring-gray-50">{displayInitials}</div>
                 <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:block" />
             </div>
         </div>

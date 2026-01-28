@@ -1,4 +1,4 @@
-const { Producto, Categoria } = require('../models');
+const { Producto, Categoria, Auditoria } = require('../models');
 
 // Obtener todos los productos
 exports.getAll = async (req, res) => {
@@ -38,7 +38,8 @@ exports.getById = async (req, res) => {
 // Crear un nuevo producto
 exports.create = async (req, res) => {
     try {
-        const { nombre, stock_actual, stock_minimo, categoria_id } = req.body;
+        const { nombre, stock_actual, stock_minimo, categoria_id, sku, descripcion } = req.body;
+        const usuario_id = req.userId;
 
         // Validaciones básicas
         if (!nombre || !categoria_id) {
@@ -49,7 +50,17 @@ exports.create = async (req, res) => {
             nombre,
             stock_actual: stock_actual || 0,
             stock_minimo: stock_minimo || 0,
-            categoria_id
+            categoria_id,
+            sku,
+            descripcion
+        });
+
+        // Auditoría
+        await Auditoria.create({
+            usuario_id,
+            objetivo_id: producto.id,
+            accion: 'CREAR_PRODUCTO',
+            detalles: `Producto creado: ${nombre}`
         });
 
         res.status(201).json(producto);
@@ -62,7 +73,8 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const id = req.params.id;
-        const { nombre, stock_actual, stock_minimo, categoria_id } = req.body;
+        const { nombre, stock_actual, stock_minimo, categoria_id, sku, descripcion } = req.body;
+        const usuario_id = req.userId;
 
         const producto = await Producto.findByPk(id);
 
@@ -74,7 +86,17 @@ exports.update = async (req, res) => {
             nombre,
             stock_actual,
             stock_minimo,
-            categoria_id
+            categoria_id,
+            sku,
+            descripcion
+        });
+
+        // Auditoría
+        await Auditoria.create({
+            usuario_id,
+            objetivo_id: producto.id,
+            accion: 'EDITAR_PRODUCTO',
+            detalles: `Producto actualizado: ${nombre}`
         });
 
         res.status(200).json(producto);
@@ -87,6 +109,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
     try {
         const id = req.params.id;
+        const usuario_id = req.userId;
         const producto = await Producto.findByPk(id);
 
         if (!producto) {
@@ -94,6 +117,15 @@ exports.delete = async (req, res) => {
         }
 
         await producto.destroy();
+
+        // Auditoría
+        await Auditoria.create({
+            usuario_id,
+            objetivo_id: id,
+            accion: 'ELIMINAR_PRODUCTO',
+            detalles: `Producto eliminado: ${producto.nombre}`
+        });
+
         res.status(200).send({ message: "Producto eliminado exitosamente." });
     } catch (error) {
         res.status(500).send({ message: error.message });

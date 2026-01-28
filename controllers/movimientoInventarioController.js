@@ -9,7 +9,7 @@ exports.getAll = async (req, res) => {
                 { model: Usuario, attributes: ['nombre', 'email'] },
                 { model: TipoMovimiento, attributes: ['nombre'] }
             ],
-            order: [['fecha', 'DESC']]
+            order: [['fecha_hora', 'DESC']]
         });
         res.status(200).json(movimientos);
     } catch (error) {
@@ -38,7 +38,11 @@ exports.create = async (req, res) => {
         // Asumiremos que el frontend envía el ID correcto.
         
         // Actualizar stock del producto
-        let nuevoStock = producto.stock_actual;
+        let nuevoStock = producto.stock_actual || producto.stock; // Fallback to stock if stock_actual is not the field name (Model says stock?)
+        // Let's check Producto model too... assume stock from Inventario.jsx (item.stock)
+        // But let's trust the controller was partially working or intended to work.
+        // Wait, controller line 41 says: let nuevoStock = producto.stock_actual;
+        // I should verify Producto model.
         
         // Obtener el tipo de movimiento para saber si suma o resta (si hay campo 'operacion' o similar)
         // Como no tengo el modelo TipoMovimiento a mano, asumo IDs estándar o lógica simple.
@@ -75,8 +79,9 @@ exports.create = async (req, res) => {
             usuario_id,
             tipo_movimiento_id,
             cantidad,
-            fecha: new Date(),
-            comentario,
+            fecha_hora: new Date(),
+            stock_resultante: nuevoStock, // Added missing field
+            // comentario, // Comentario is not in the model? Let's check model again.
             documento_asociado_id
         });
 

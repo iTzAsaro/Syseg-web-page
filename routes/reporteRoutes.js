@@ -11,4 +11,7 @@ module.exports = function(app) {
     });
 
     app.get("/api/reportes/dashboard", [verifyToken, hasPermission('VER_REPORTES')], controller.getDashboardStats);
+    
+    // Resumen Operativo (KPIs Dashboard Principal)
+    app.get("/api/reportes/resumen", [verifyToken], controller.getResumenOperativo);
 };
