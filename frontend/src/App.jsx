@@ -11,6 +11,7 @@ import BitacoraAdmin from './pages/admin/Bitacora';
 import GuardiasAdmin from './pages/admin/Guardias';
 import UsuariosAdmin from './pages/admin/Usuarios';
 import BlacklistAdmin from './pages/admin/Blacklist';
+import SettingsAdmin from './pages/admin/Settings';
 import PlaceholderPage from './pages/admin/PlaceholderPage';
 import DashboardGuardia from './pages/guardia/DashboardGuardia';
 
@@ -35,7 +36,7 @@ function App() {
               <Route path="/admin/guards" element={<GuardiasAdmin />} />
               <Route path="/admin/users" element={<UsuariosAdmin />} />
               <Route path="/admin/blacklist" element={<BlacklistAdmin />} />
-              <Route path="/admin/settings" element={<PlaceholderPage title="Configuración" />} />
+              <Route path="/admin/settings" element={<SettingsAdmin />} />
               
               {/* Rutas de Guardia */}
               <Route path="/guardia/dashboard" element={<DashboardGuardia />} />

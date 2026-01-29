@@ -55,6 +55,7 @@ exports.buscarTodos = async (req, res) => {
                 { model: Rol },
                 { model: Permiso, through: { attributes: [] } } // Incluir permisos
             ],
+            distinct: true,
             limit: parseInt(limit),
             offset: parseInt(offset),
             order: [['nombre', 'ASC']]
@@ -67,6 +68,46 @@ exports.buscarTodos = async (req, res) => {
             usuarios: rows
         });
     } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+};
+
+exports.cambiarPasswordPerfil = async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+        const id = req.userId; // Obtenido del token
+        const { currentPassword, newPassword } = req.body;
+
+        const usuario = await Usuario.findByPk(id);
+        if (!usuario) {
+            await t.rollback();
+            return res.status(404).send({ message: "Usuario no encontrado." });
+        }
+
+        // Verificar contraseña actual
+        if (usuario.password !== currentPassword) {
+            await t.rollback();
+            return res.status(400).send({ message: "La contraseña actual es incorrecta." });
+        }
+
+        // Verificar que la nueva contraseña sea diferente
+        if (usuario.password === newPassword) {
+            await t.rollback();
+            return res.status(400).send({ message: "La nueva contraseña debe ser diferente a la actual." });
+        }
+
+        // Actualizar contraseña
+        usuario.password = newPassword;
+        await usuario.save({ transaction: t });
+
+        // Registrar en auditoría (usar null si req.userId no está definido)
+        const auditorId = req.userId || null;
+        await logAudit(auditorId, id, 'CAMBIAR_PASSWORD_PERFIL', { mensaje: 'Usuario cambió su contraseña' }, t);
+
+        await t.commit();
+        res.status(200).send({ message: "Contraseña actualizada correctamente." });
+    } catch (error) {
+        await t.rollback();
         res.status(500).send({ message: error.message });
     }
 };

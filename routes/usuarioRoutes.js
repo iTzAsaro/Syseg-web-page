@@ -9,6 +9,10 @@ module.exports = function(app) {
     // Rutas CRUD Básicas
     app.post("/api/usuarios", [verifyToken, hasPermission('CREAR_USUARIO')], controller.crear);
     app.get("/api/usuarios", [verifyToken, hasPermission('VER_USUARIOS')], controller.buscarTodos);
+    
+    // Ruta para cambio de contraseña de perfil (antes de /:id para evitar conflictos)
+    app.put("/api/usuarios/perfil/password", [verifyToken], controller.cambiarPasswordPerfil);
+
     app.get("/api/usuarios/:id", [verifyToken, hasPermission('VER_USUARIOS')], controller.buscarUno);
     app.put("/api/usuarios/:id", [verifyToken, hasPermission('EDITAR_USUARIO')], controller.actualizar);
     app.delete("/api/usuarios/:id", [verifyToken, hasPermission('ELIMINAR_USUARIO')], controller.eliminar);
