@@ -207,20 +207,20 @@ const Inventario = () => {
                 <table className="w-full text-sm text-left whitespace-nowrap">
                     <thead className="bg-gray-50/50 text-gray-500 font-bold uppercase text-[11px] tracking-wider border-b border-gray-100">
                         <tr>
-                            <th className="px-6 py-4 w-1/4 align-middle">Producto</th>
-                            <th className="px-6 py-4 w-1/6 align-middle">Nivel de Stock</th>
-                            <th className="px-6 py-4 w-1/6 text-right align-middle">Acciones</th>
+                            <th className="px-6 py-4 w-1/4 align-middle text-center">Producto</th>
+                            <th className="px-6 py-4 w-1/6 align-middle text-center">Nivel de Stock</th>
+                            <th className="px-6 py-4 w-1/6 align-middle text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {filteredProducts.map((item) => (
                             <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center justify-center gap-3">
                                         <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 border border-gray-200 group-hover:border-red-200 group-hover:bg-red-50 group-hover:text-red-600 transition-all">
                                             <Box className="w-5 h-5" />
                                         </div>
-                                        <div>
+                                        <div className="text-left">
                                             <div className="font-bold text-gray-900 text-sm">{item.name}</div>
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 mt-1">
                                                 {item.category}
@@ -230,16 +230,16 @@ const Inventario = () => {
                                 </td>
                                 <td className="px-6 py-4">
                                     {/* DISEÑO STOCK SIN BARRA */}
-                                    <div className="flex items-center justify-between max-w-[180px] bg-gray-50 rounded-lg p-2 border border-gray-100">
-                                        <div>
+                                    <div className="flex items-center justify-center max-w-[180px] mx-auto bg-gray-50 rounded-lg p-2 border border-gray-100 gap-4">
+                                        <div className="text-left">
                                             <span className="block text-sm font-bold text-gray-900">{item.stock} <span className="text-[10px] text-gray-400 font-normal">unid.</span></span>
                                             <span className="block text-[10px] text-gray-400">Min: {item.minStock}</span>
                                         </div>
                                         {getStockBadge(item.stock, item.minStock)}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 text-right">
-                                    <div className="flex items-center justify-end gap-2">
+                                <td className="px-6 py-4 text-center">
+                                    <div className="flex items-center justify-center gap-2">
                                         <RequirePermission permission="AJUSTAR_STOCK">
                                             <button 
                                               onClick={() => addToCart(item)}
