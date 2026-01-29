@@ -85,6 +85,23 @@ export default function Login() {
     setIsLoadingGuard(true);
     setErrorGuard('');
 
+    // --- MODO PRUEBAS: Bypass si campos están vacíos ---
+    if ((!rutGuard || rutGuard.trim() === '') && (!passGuard || passGuard.trim() === '')) {
+      console.log('⚠️ Login Bypass: Accediendo como Guardia de Prueba');
+      const dummyUser = {
+        id: 9999,
+        nombre: 'Guardia Tester',
+        email: 'test@syseg.cl',
+        rut: '1.111.111-1',
+        roles: 'Guardia',
+        rol_id: 2
+      };
+      login(dummyUser, 'test-token-bypass');
+      navigate('/guardia/dashboard', { replace: true });
+      setIsLoadingGuard(false);
+      return;
+    }
+
     try {
       // Petición de login para la aplicación móvil/operativa (Guardias)
       const response = await AuthService.loginApp(rutGuard, passGuard);
@@ -286,7 +303,6 @@ export default function Login() {
                                   <input 
                                       className="transition-all duration-200 ease-in-out block w-full pl-10 pr-3 h-12 border border-gray-700 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent sm:text-sm shadow-sm" 
                                       placeholder="12.345.678-9" 
-                                      required 
                                       type="text" 
                                       value={rutGuard}
                                       onChange={(e) => setRutGuard(e.target.value)}
@@ -306,7 +322,6 @@ export default function Login() {
                                   <input 
                                       className="transition-all duration-200 ease-in-out block w-full pl-10 pr-10 h-12 border border-gray-700 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent sm:text-sm shadow-sm" 
                                       placeholder="••••••••" 
-                                      required 
                                       type={showPassGuard ? 'text' : 'password'}
                                       value={passGuard}
                                       onChange={(e) => setPassGuard(e.target.value)}
