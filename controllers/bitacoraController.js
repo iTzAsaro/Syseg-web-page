@@ -4,8 +4,38 @@ const { Op } = require('sequelize');
 // Crear un nuevo registro en bitácora
 exports.create = async (req, res) => {
     try {
-        const { accion, detalles, nivel, ip_address, fecha } = req.body;
+        const { accion, descripcion, categoria, prioridad, nivel, fecha } = req.body;
         
+        // Detectar IP automáticamente
+        let ip_address = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+
+        // Normalizar IP local (IPv6 ::1 a IPv4 127.0.0.1)
+        if (ip_address === '::1' || ip_address === '::ffff:127.0.0.1') {
+            ip_address = '127.0.0.1';
+        }
+
+        console.log('Bitacora.create Payload recibido:', req.body);
+        console.log('IP detectada:', ip_address);
+
+        // Validación de campos obligatorios mínimos
+        if (!accion) {
+            return res.status(400).send({ message: "El campo 'accion' es obligatorio." });
+        }
+
+        // Lógica de asignación y validación de campos nuevos
+        // 1. Prioridad: Si no viene, intentar deducir de 'nivel'. Si no, 'Baja'.
+        let finalPrioridad = prioridad;
+        if (!finalPrioridad) {
+            if (nivel) finalPrioridad = nivel; // Mapeo directo si coinciden
+            else finalPrioridad = 'Baja';
+        }
+
+        // 2. Categoría: Si no viene, 'Rutina'.
+        let finalCategoria = categoria || 'Rutina';
+
+        // 3. Descripción: Asegurar string vacío si es null
+        let finalDescripcion = descripcion || '';
+
         // El usuario viene del middleware de autenticación (verifyToken)
         const usuario_id = req.userId; 
         
@@ -20,8 +50,10 @@ exports.create = async (req, res) => {
             usuario_id,
             autor,
             accion,
-            detalles,
-            nivel,
+            descripcion: finalDescripcion,
+            categoria: finalCategoria,
+            prioridad: finalPrioridad,
+            nivel: nivel || finalPrioridad, // Asegurar que nivel también tenga valor
             ip_address
         };
 
@@ -30,10 +62,13 @@ exports.create = async (req, res) => {
             bitacoraData.fecha = fecha;
         }
 
+        console.log('Guardando en DB:', bitacoraData);
+
         const bitacora = await Bitacora.create(bitacoraData);
 
         res.status(201).send(bitacora);
     } catch (error) {
+        console.error('Error en Bitacora.create:', error);
         res.status(500).send({
             message: error.message || "Error al crear registro de bitácora."
         });
@@ -45,15 +80,23 @@ exports.buscarTodos = async (req, res) => {
     try {
         const { page = 1, limit = 10, search, nivel, fechaInicio, fechaFin } = req.query;
         const offset = (page - 1) * limit;
+        const usuario_id = req.userId; // ID del usuario autenticado
         
-        let condition = {};
+        // Filtro base: Solo mostrar bitácoras del usuario autenticado
+        let condition = { usuario_id };
 
-        // Filtro por búsqueda (autor, acción o detalles)
+        // Filtro por búsqueda (autor, acción, descripcion o categoria)
         if (search) {
-            condition[Op.or] = [
-                { autor: { [Op.like]: `%${search}%` } },
-                { accion: { [Op.like]: `%${search}%` } },
-                { detalles: { [Op.like]: `%${search}%` } }
+            condition[Op.and] = [
+                { usuario_id },
+                {
+                    [Op.or]: [
+                        { autor: { [Op.like]: `%${search}%` } },
+                        { accion: { [Op.like]: `%${search}%` } },
+                        { descripcion: { [Op.like]: `%${search}%` } },
+                        { categoria: { [Op.like]: `%${search}%` } }
+                    ]
+                }
             ];
         }
 
@@ -97,7 +140,7 @@ exports.buscarTodos = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const { id } = req.params;
-        const { accion, detalles, nivel, fecha } = req.body;
+        const { accion, descripcion, categoria, prioridad, nivel, fecha } = req.body;
         const usuario_id = req.userId;
 
         const log = await Bitacora.findByPk(id);
@@ -106,17 +149,20 @@ exports.update = async (req, res) => {
             return res.status(404).send({ message: "Registro no encontrado." });
         }
 
-        // Verificar permisos (solo el autor o admin pueden editar - simplificado por ahora a todos autenticados)
-        // Idealmente: if (log.usuario_id !== usuario_id && !isAdmin) ...
+        // Verificar permisos: Solo el propietario puede editar
+        if (log.usuario_id !== usuario_id) {
+            return res.status(403).send({ 
+                message: "Acceso denegado. No tienes permiso para editar esta bitácora." 
+            });
+        }
 
         log.accion = accion || log.accion;
-        log.detalles = detalles || log.detalles;
+        log.descripcion = descripcion || log.descripcion;
+        log.categoria = categoria || log.categoria;
+        log.prioridad = prioridad || log.prioridad;
         log.nivel = nivel || log.nivel;
         if (fecha) log.fecha = fecha;
         
-        // Opcional: registrar que fue editado
-        // log.detalles += ` (Editado por usuario ${usuario_id})`;
-
         await log.save();
 
         res.send({ message: "Registro actualizado exitosamente.", log });
@@ -131,10 +177,19 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
     try {
         const { id } = req.params;
+        const usuario_id = req.userId; // ID del usuario autenticado
+
         const log = await Bitacora.findByPk(id);
 
         if (!log) {
             return res.status(404).send({ message: "Registro no encontrado." });
+        }
+
+        // Verificar permisos: Solo el propietario puede eliminar
+        if (log.usuario_id !== usuario_id) {
+            return res.status(403).send({ 
+                message: "Acceso denegado. No tienes permiso para eliminar esta bitácora." 
+            });
         }
 
         await log.destroy();
@@ -148,7 +203,7 @@ exports.delete = async (req, res) => {
 };
 
 // Método interno para usar desde otros controladores (sin req, res)
-exports.logInterno = async (usuario_id, accion, detalles, nivel = 'Informativa', ip = null) => {
+exports.logInterno = async (usuario_id, accion, descripcion, nivel = 'Informativa', ip = null) => {
     try {
         let autor = 'Sistema';
         if (usuario_id) {
@@ -160,7 +215,9 @@ exports.logInterno = async (usuario_id, accion, detalles, nivel = 'Informativa',
             usuario_id,
             autor,
             accion,
-            detalles,
+            descripcion,
+            categoria: 'Sistema',
+            prioridad: 'Media',
             nivel,
             ip_address: ip
         });

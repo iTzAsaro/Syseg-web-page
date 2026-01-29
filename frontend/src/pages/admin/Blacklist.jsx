@@ -1,9 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Ban, UserX, Store, Calendar, Edit, Trash2, X, Plus, AlertTriangle, ShieldAlert} from 'lucide-react';
+import { 
+    Ban, UserX, Store, Calendar, Edit, Trash2, X, Plus, AlertTriangle, 
+    ShieldAlert, Search, Loader2, AlertCircle, ChevronLeft, ChevronRight 
+} from 'lucide-react';
 import Layout from '../../components/Layout';
 import blacklistService from '../../services/blacklistService';
 import Swal from 'sweetalert2';
 import RequirePermission from '../../components/RequirePermission';
+
+// Funciones auxiliares para RUT y Texto
+const formatRut = (rut) => {
+    if (!rut) return '';
+    const cleanRut = rut.replace(/[^0-9kK]/g, '');
+    if (cleanRut.length <= 1) return cleanRut;
+    const body = cleanRut.slice(0, -1);
+    const dv = cleanRut.slice(-1).toUpperCase();
+    return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`;
+};
+
+const validateRut = (rut) => {
+    if (!rut) return false;
+    const cleanRut = rut.replace(/[^0-9kK]/g, '');
+    if (cleanRut.length < 2) return false;
+    const body = cleanRut.slice(0, -1);
+    const dv = cleanRut.slice(-1).toUpperCase();
+    let sum = 0;
+    let multiplier = 2;
+    for (let i = body.length - 1; i >= 0; i--) {
+        sum += parseInt(body[i]) * multiplier;
+        multiplier = multiplier === 7 ? 2 : multiplier + 1;
+    }
+    const res = 11 - (sum % 11);
+    const calculatedDv = res === 11 ? '0' : res === 10 ? 'K' : res.toString();
+    return dv === calculatedDv;
+};
+
+const toTitleCase = (str) => {
+    return str.replace(/\w\S*/g, (txt) => {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+};
 
 export default function Blacklist() {
   const [blacklist, setBlacklist] = useState([]);
@@ -11,9 +47,13 @@ export default function Blacklist() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEntry, setCurrentEntry] = useState(null);
   
+  // Búsqueda avanzada
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchError, setSearchError] = useState('');
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 27;
+  const itemsPerPage = 10;
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -28,14 +68,6 @@ export default function Blacklist() {
   useEffect(() => {
     fetchBlacklist();
   }, []);
-
-  // Ajustar página si los items cambian y la página actual queda vacía
-  useEffect(() => {
-    const total = Math.ceil(blacklist.length / itemsPerPage);
-    if (currentPage > total && total > 0) {
-        setCurrentPage(total);
-    }
-  }, [blacklist, currentPage]);
 
   const fetchBlacklist = async () => {
     try {
@@ -131,39 +163,59 @@ export default function Blacklist() {
     }
   };
 
-  // Cálculos de paginación
-  const totalPages = Math.ceil(blacklist.length / itemsPerPage);
-  const currentItems = blacklist.slice(
+  const handleSearchChange = (e) => {
+    let value = e.target.value;
+    
+    if (value.length === 0) {
+        setSearchTerm('');
+        setSearchError('');
+        setCurrentPage(1);
+        return;
+    }
+
+    const firstChar = value.charAt(0);
+    
+    // Detectar tipo de búsqueda y aplicar lógica
+    if (/[0-9]/.test(firstChar)) {
+        // Lógica RUT: solo números y k/K
+        const clean = value.replace(/[^0-9kK]/g, '');
+        // Formatear mientras escribe
+        const formatted = formatRut(clean);
+        value = formatted;
+        
+        // Validar RUT completo (si tiene al menos un cuerpo y DV)
+        if (clean.length > 1 && !validateRut(clean)) {
+            setSearchError('RUT inválido');
+        } else {
+            setSearchError('');
+        }
+    } else if (/[a-zA-Z\u00C0-\u00FF]/.test(firstChar)) {
+        // Lógica Nombre: solo letras y espacios
+        value = value.replace(/[^a-zA-Z\u00C0-\u00FF\s]/g, ''); // Incluir acentos
+        value = toTitleCase(value);
+        
+        if (value.length > 0 && value.length < 3) {
+            setSearchError('Mínimo 3 caracteres');
+        } else {
+            setSearchError('');
+        }
+    }
+    
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const filteredBlacklist = blacklist.filter(item => 
+    (item.nombre?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+    (item.rut || '').includes(searchTerm)
+  );
+
+  // Paginación
+  const totalPages = Math.ceil(filteredBlacklist.length / itemsPerPage);
+  const currentItems = filteredBlacklist.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const getPageNumbers = () => {
-    const delta = 1;
-    const range = [];
-    const rangeWithDots = [];
-    let l;
-
-    for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
-            range.push(i);
-        }
-    }
-
-    for (let i of range) {
-        if (l) {
-            if (i - l === 2) {
-                rangeWithDots.push(l + 1);
-            } else if (i - l !== 1) {
-                rangeWithDots.push('...');
-            }
-        }
-        rangeWithDots.push(i);
-        l = i;
-    }
-
-    return rangeWithDots;
-  };
 
   return (
     <Layout>
@@ -190,156 +242,154 @@ export default function Blacklist() {
             </RequirePermission>
         </div>
 
-        {/* Grid de Tarjetas */}
-        {loading ? (
-           <div className="flex justify-center items-center h-64">
-             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-           </div>
-        ) : blacklist.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
-                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <UserX className="w-8 h-8 text-gray-400" />
+        {/* Search & Filters */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div className="relative w-full max-w-xl">
+                <div className="relative">
+                    <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar por RUT o nombre" 
+                        className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${searchError ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-red-500'} rounded-xl text-sm font-medium outline-none focus:ring-2 transition-all`}
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                    />
+                    {loading && (
+                        <Loader2 className="w-5 h-5 text-gray-400 absolute right-4 top-1/2 transform -translate-y-1/2 animate-spin" />
+                    )}
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">No hay registros en la lista negra</h3>
-                <p className="text-gray-500 mt-1">La lista de bloqueos está vacía.</p>
-            </div>
-        ) : (
-            <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {currentItems.map((record) => (
-                    <div key={record.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group relative flex flex-col">
-                        {/* Borde Rojo Izquierdo */}
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-red-600"></div>
-                        
-                        <div className="p-6 pl-8 flex-1 flex flex-col">
-                            {/* Header Tarjeta */}
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 className="font-black text-gray-900 text-lg leading-tight line-clamp-2">{record.nombre}</h3>
-                                    <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-mono font-bold rounded">
-                                        {record.rut}
-                                    </span>
-                                </div>
-                                <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600 shadow-sm shrink-0">
-                                    <UserX className="w-5 h-5" />
-                                </div>
-                            </div>
-
-                            {/* Contenido */}
-                            <div className="space-y-3 mb-6 flex-1">
-                                {/* Recintos */}
-                                <div className="flex items-start gap-2 text-sm text-gray-600">
-                                    <Store className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                                    <span className="font-medium leading-tight">{record.recintos || 'No especificado'}</span>
-                                </div>
-
-                                {/* Fechas Box */}
-                                <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 space-y-2">
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-gray-500 flex items-center gap-1">
-                                            <Calendar className="w-3 h-3" /> Ingreso
-                                        </span>
-                                        <span className="font-mono font-bold text-gray-700">{record.fecha_ingreso || '-'}</span>
-                                    </div>
-                                    <div className="w-full h-px bg-gray-200"></div>
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-red-500 flex items-center gap-1 font-bold">
-                                            <Ban className="w-3 h-3" /> Bloqueo
-                                        </span>
-                                        <span className="font-mono font-bold text-red-700">{record.fecha_bloqueo}</span>
-                                    </div>
-                                </div>
-
-                                {/* Motivo */}
-                                <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Motivo del Bloqueo</p>
-                                    <p className="text-sm text-gray-700 italic leading-relaxed line-clamp-3">"{record.motivo}"</p>
-                                </div>
-                            </div>
-
-                            {/* Footer Actions */}
-                            <div className="pt-4 border-t border-gray-100 flex justify-end gap-2 mt-auto">
-                                <RequirePermission permission="GESTIONAR_BLACKLIST">
-                                    <button 
-                                        onClick={() => handleOpenModal(record)} 
-                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                        title="Editar"
-                                    >
-                                        <Edit className="w-4 h-4" />
-                                    </button>
-                                </RequirePermission>
-                                <RequirePermission permission="GESTIONAR_BLACKLIST">
-                                    <button 
-                                        onClick={() => handleDelete(record.id)} 
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Eliminar"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </RequirePermission>
-                            </div>
-                        </div>
+                {searchError && (
+                    <div className="absolute -bottom-6 left-0 flex items-center gap-1.5 text-xs text-red-600 font-medium animate-in fade-in slide-in-from-top-1">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        {searchError}
                     </div>
-                ))}
+                )}
+            </div>
+        </div>
+
+        {/* Tabla Responsive */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                    <thead>
+                        <tr className="bg-gray-50/50 border-b border-gray-100">
+                            <th className="px-6 py-4 font-bold text-gray-900">Nombre Completo</th>
+                            <th className="px-6 py-4 font-bold text-gray-900">RUT</th>
+                            <th className="px-6 py-4 font-bold text-gray-900">Motivo / Recinto</th>
+                            <th className="px-6 py-4 font-bold text-gray-900 text-center">Fechas</th>
+                            <th className="px-6 py-4 font-bold text-gray-900 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {currentItems.length > 0 ? (
+                            currentItems.map(record => (
+                                <tr key={record.id} className="hover:bg-red-50/10 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600 font-bold text-sm shadow-sm shrink-0">
+                                                <UserX className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900">{record.nombre}</h4>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 font-mono text-gray-600">
+                                        {record.rut}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="space-y-1">
+                                            <p className="font-medium text-gray-900 line-clamp-1" title={record.motivo}>
+                                                {record.motivo}
+                                            </p>
+                                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                                <Store className="w-3 h-3" />
+                                                <span className="truncate max-w-[200px]">{record.recintos || 'No especificado'}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col gap-1 items-center">
+                                            <div className="flex items-center gap-1.5 text-xs bg-red-50 text-red-700 px-2 py-1 rounded border border-red-100 font-bold">
+                                                <Ban className="w-3 h-3" />
+                                                {record.fecha_bloqueo}
+                                            </div>
+                                            {record.fecha_ingreso && (
+                                                <span className="text-[10px] text-gray-400">
+                                                    Ingreso: {record.fecha_ingreso}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <RequirePermission permission="GESTIONAR_BLACKLIST">
+                                                <button 
+                                                    onClick={() => handleOpenModal(record)} 
+                                                    className="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+                                                    title="Editar"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                            </RequirePermission>
+                                            <RequirePermission permission="GESTIONAR_BLACKLIST">
+                                                <button 
+                                                    onClick={() => handleDelete(record.id)} 
+                                                    className="p-2 bg-white border border-gray-200 text-gray-400 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm"
+                                                    title="Eliminar"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </RequirePermission>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                                    <div className="flex flex-col items-center gap-3">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
+                                            <Search className="w-6 h-6 text-gray-300" />
+                                        </div>
+                                        <p className="font-medium">No se encontraron resultados</p>
+                                        <p className="text-xs text-gray-400">Intente con otro término de búsqueda</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
             </div>
 
             {/* Paginación */}
             {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row justify-between items-center mt-6 pt-4 border-t border-gray-100 gap-4">
-                    <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <span>Mostrando {currentItems.length} de {blacklist.length} registros</span>
-                        <select 
-                            value={currentPage} 
-                            onChange={(e) => setCurrentPage(Number(e.target.value))}
-                            className="bg-gray-50 border border-gray-200 rounded-lg text-xs py-1 px-2 focus:ring-2 focus:ring-red-500 outline-none"
-                        >
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                                <option key={pageNum} value={pageNum}>Pág. {pageNum}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex items-center gap-1">
+                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/30">
+                    <span className="text-xs text-gray-500 font-medium">
+                        Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, filteredBlacklist.length)} - {Math.min(currentPage * itemsPerPage, filteredBlacklist.length)} de {filteredBlacklist.length} registros
+                    </span>
+                    <div className="flex items-center gap-2">
                         <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                             disabled={currentPage === 1}
-                            className="px-3 py-1.5 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 text-sm font-medium transition-colors text-gray-600"
+                            className="p-2 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
                         >
-                            Anterior
+                            <ChevronLeft className="w-4 h-4 text-gray-600" />
                         </button>
-                        
-                        <div className="hidden sm:flex items-center gap-1 mx-2">
-                            {getPageNumbers().map((pageNum, idx) => (
-                                pageNum === '...' ? (
-                                    <span key={`dots-${idx}`} className="text-gray-400 px-1 text-xs">...</span>
-                                ) : (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
-                                            currentPage === pageNum 
-                                            ? 'bg-red-600 text-white shadow-md shadow-red-200' 
-                                            : 'text-gray-600 hover:bg-gray-100 hover:text-red-600'
-                                        }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                )
-                            ))}
-                        </div>
-
+                        <span className="text-xs font-bold text-gray-900 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
+                            {currentPage} / {totalPages}
+                        </span>
                         <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                             disabled={currentPage === totalPages}
-                            className="px-3 py-1.5 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 text-sm font-medium transition-colors text-gray-600"
+                            className="p-2 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
                         >
-                            Siguiente
+                            <ChevronRight className="w-4 h-4 text-gray-600" />
                         </button>
                     </div>
                 </div>
             )}
-            </>
-        )}
+        </div>
       </div>
 
       {/* MODAL FORMULARIO */}

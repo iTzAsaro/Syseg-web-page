@@ -22,15 +22,25 @@ const Bitacora = sequelize.define('Bitacora', {
     allowNull: false,
     comment: 'Tipo de acción realizada (LOGIN, CREAR, ACTUALIZAR, ELIMINAR, etc.)'
   },
-  detalles: {
+  descripcion: {
     type: DataTypes.TEXT,
     allowNull: true,
-    comment: 'Descripción detallada o JSON con cambios'
+    comment: 'Descripción detallada de la novedad'
+  },
+  categoria: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    comment: 'Categoría de la novedad (Rutina, Incidente, etc.)'
+  },
+  prioridad: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: 'Prioridad operativa (Baja, Media, Alta, Critica)'
   },
   nivel: {
     type: DataTypes.ENUM('Critica', 'Alta', 'Media', 'Baja', 'Informativa', 'Normal'),
     defaultValue: 'Informativa',
-    comment: 'Nivel de severidad del evento'
+    comment: 'Nivel de severidad del sistema'
   },
   ip_address: {
     type: DataTypes.STRING,
