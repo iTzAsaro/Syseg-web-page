@@ -29,7 +29,7 @@ const Inventario = () => {
           setLoading(true);
           const data = await productoService.getAll();
           // Mapear datos si es necesario para ajustar nombres de propiedades
-          // Backend: nombre, stock_actual, stock_minimo, sku, categoria_id, Categoria.nombre
+          // Backend: nombre, stock_actual, stock_minimo, categoria_id, Categoria.nombre
           const mappedProducts = data.map(p => ({
               ...p,
               name: p.nombre,
@@ -89,9 +89,8 @@ const Inventario = () => {
           const payload = {
               nombre: productData.name,
               stock_actual: parseInt(productData.stock),
-              stock_minimo: parseInt(productData.minStock),
-              sku: productData.sku,
-              descripcion: productData.description, // Asumiendo que el modal enviará description
+            stock_minimo: parseInt(productData.minStock),
+            descripcion: productData.description, // Asumiendo que el modal enviará description
               precio: parseInt(productData.price),
               costo: parseInt(productData.cost),
               categoria_id: productData.categoryId // El modal debe enviar el ID
@@ -117,10 +116,9 @@ const Inventario = () => {
   // Exportar a Excel
   const handleExport = () => {
       const ws = XLSX.utils.json_to_sheet(products.map(p => ({
-          ID: p.id,
-          Nombre: p.name,
-          SKU: p.sku,
-          Categoría: p.category,
+        ID: p.id,
+        Nombre: p.name,
+        Categoría: p.category,
           Stock: p.stock,
           'Stock Mínimo': p.minStock
       })));
@@ -132,8 +130,7 @@ const Inventario = () => {
   // --- FILTROS ---
   const filteredProducts = products.filter(item => 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()))
+      item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Helper visual para BADGES (Sin barras)
@@ -211,7 +208,6 @@ const Inventario = () => {
                     <thead className="bg-gray-50/50 text-gray-500 font-bold uppercase text-[11px] tracking-wider border-b border-gray-100">
                         <tr>
                             <th className="px-6 py-4 w-1/4 align-middle">Producto</th>
-                            <th className="px-6 py-4 w-1/6 align-middle">SKU</th>
                             <th className="px-6 py-4 w-1/6 align-middle">Nivel de Stock</th>
                             <th className="px-6 py-4 w-1/6 text-right align-middle">Acciones</th>
                         </tr>
@@ -231,9 +227,6 @@ const Inventario = () => {
                                             </span>
                                         </div>
                                     </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className="text-sm text-gray-600 font-mono">{item.sku || '-'}</span>
                                 </td>
                                 <td className="px-6 py-4">
                                     {/* DISEÑO STOCK SIN BARRA */}

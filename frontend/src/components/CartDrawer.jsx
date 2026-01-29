@@ -90,7 +90,7 @@ const CartDrawer = () => {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5 mb-2">{item.category} • SKU: {item.sku}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 mb-2">{item.category}</p>
                     
                     {/* Controls Row */}
                     <div className="flex items-center justify-between">

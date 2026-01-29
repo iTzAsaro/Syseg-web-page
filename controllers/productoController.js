@@ -38,7 +38,7 @@ exports.getById = async (req, res) => {
 // Crear un nuevo producto
 exports.create = async (req, res) => {
     try {
-        const { nombre, stock_actual, stock_minimo, categoria_id, sku, descripcion } = req.body;
+        const { nombre, stock_actual, stock_minimo, categoria_id, descripcion } = req.body;
         const usuario_id = req.userId;
 
         // Validaciones básicas
@@ -51,7 +51,6 @@ exports.create = async (req, res) => {
             stock_actual: stock_actual || 0,
             stock_minimo: stock_minimo || 0,
             categoria_id,
-            sku,
             descripcion
         });
 
@@ -73,7 +72,7 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const id = req.params.id;
-        const { nombre, stock_actual, stock_minimo, categoria_id, sku, descripcion } = req.body;
+        const { nombre, stock_actual, stock_minimo, categoria_id, descripcion } = req.body;
         const usuario_id = req.userId;
 
         const producto = await Producto.findByPk(id);
@@ -87,7 +86,6 @@ exports.update = async (req, res) => {
             stock_actual,
             stock_minimo,
             categoria_id,
-            sku,
             descripcion
         });
 

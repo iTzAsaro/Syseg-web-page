@@ -8,7 +8,6 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
     const [formData, setFormData] = useState({
         name: '',
         categoryId: '',
-        sku: '',
         stock: 0,
         minStock: 5,
         description: '',
@@ -43,7 +42,6 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
             setFormData({
                 name: product.name || '',
                 categoryId: product.categoria_id || product.categoryId || '', // Ajustar según backend
-                sku: product.sku || '',
                 stock: product.stock || 0,
                 minStock: product.minStock || 0,
                 description: product.descripcion || ''
@@ -53,7 +51,6 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
             setFormData({
                 name: '',
                 categoryId: categories.length > 0 ? categories[0].id : '',
-                sku: '',
                 stock: 0,
                 minStock: 5,
                 description: ''
@@ -117,16 +114,6 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">SKU / Código</label>
-                            <input 
-                                type="text" 
-                                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition-all"
-                                placeholder="COD-001"
-                                value={formData.sku}
-                                onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                            />
-                        </div>
                     </div>
 
                     <div className="space-y-1">
