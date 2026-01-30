@@ -50,14 +50,23 @@ exports.getResumenOperativo = async (req, res) => {
  */
 exports.getDashboardStats = async (req, res) => {
     try {
-        // 1. Actividad Semanal (Movimientos de Inventario de los últimos 7 días)
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        // 1. Actividad Semanal (Lunes a Domingo de la semana actual)
+        const today = new Date();
+        const dayOfWeek = today.getDay(); // 0 (Dom) - 6 (Sab)
+        const distanceToMonday = (dayOfWeek + 6) % 7; // Cuantos dias restar para llegar al Lunes
+        
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - distanceToMonday);
+        startOfWeek.setHours(0, 0, 0, 0);
 
-        const movimientos = await MovimientoInventario.findAll({
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        const movimientosSemana = await MovimientoInventario.findAll({
             where: {
                 fecha_hora: {
-                    [Op.gte]: sevenDaysAgo
+                    [Op.between]: [startOfWeek, endOfWeek]
                 }
             },
             attributes: [
@@ -69,27 +78,35 @@ exports.getDashboardStats = async (req, res) => {
             order: [[sequelize.fn('DATE', sequelize.col('fecha_hora')), 'ASC']]
         });
 
-        // Formatear para el frontend (Lun, Mar, etc.)
-        const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        const activityData = movimientos.map(m => {
-            const date = new Date(m.get('fecha'));
-            // Ajuste por zona horaria si es necesario, pero simple por ahora
-            return {
-                day: days[date.getDay()],
-                ingresos: parseInt(m.get('ingresos')) || 0,
-                retiros: parseInt(m.get('retiros')) || 0,
-                // Calculamos un valor normalizado para la altura de la barra si se desea, 
-                // o enviamos los valores crudos y el frontend decide.
-                // El frontend actual usa 'val' (porcentaje). Vamos a enviar los crudos y que el frontend adapte.
-                rawDate: m.get('fecha')
-            };
-        });
+        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        const activityData = [];
+        
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek);
+            d.setDate(d.getDate() + i);
+            
+            const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            const mov = movimientosSemana.find(m => m.get('fecha') === dateStr);
+            
+            activityData.push({
+                day: days[i],
+                ingresos: mov ? parseInt(mov.get('ingresos')) : 0,
+                retiros: mov ? parseInt(mov.get('retiros')) : 0,
+                rawDate: dateStr
+            });
+        }
 
-        // 2. Top 5 Productos Más Solicitados (Salidas históricas o del último mes)
-        // Vamos a tomar histórico global para tener datos, o filtrar si se prefiere.
+        // 2. Top 5 Productos Más Solicitados (Mes Actual)
+        // Definir inicio y fin del mes actual
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+
         const topProductos = await MovimientoInventario.findAll({
             where: {
-                cantidad: { [Op.lt]: 0 } // Solo salidas
+                cantidad: { [Op.lt]: 0 }, // Solo salidas
+                fecha_hora: {
+                    [Op.between]: [startOfMonth, endOfMonth]
+                }
             },
             attributes: [
                 'producto_id',
@@ -119,10 +136,13 @@ exports.getDashboardStats = async (req, res) => {
         const maxCount = topItems.length > 0 ? Math.max(...topItems.map(i => i.count)) : 100;
         topItems.forEach(i => i.max = maxCount * 1.2); // Un poco más del maximo para margen
 
-        // 3. Top Usuarios (Más retiros)
+        // 3. Top Usuarios (Más retiros - Mes Actual)
         const topUsersQuery = await MovimientoInventario.findAll({
             where: {
-                cantidad: { [Op.lt]: 0 } // Solo salidas
+                cantidad: { [Op.lt]: 0 }, // Solo salidas
+                fecha_hora: {
+                    [Op.between]: [startOfMonth, endOfMonth]
+                }
             },
             attributes: [
                 'usuario_id',

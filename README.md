@@ -1,74 +1,64 @@
 # Syseg Web Gestión
 
-Sistema integral para la gestión de seguridad, control de personal e inventario.
-
-## Descripción
-
-Este proyecto es una plataforma web diseñada para optimizar la administración de recursos de seguridad. Permite gestionar guardias, controlar inventario de uniformes y equipos, mantener bitácoras de eventos y administrar usuarios con roles específicos.
+Sistema de gestión integral para control de inventario, guardias y reportes operativos.
 
 ## Características Principales
-
-- **Gestión de Guardias:** Administración de perfiles, asignaciones y documentación.
-- **Inventario:** Control de stock, categorías y movimientos de productos (uniformes, equipos).
-- **Bitácora Digital:** Registro de eventos e incidentes con seguimiento de autoría.
-- **Blacklist:** Registro y control de personal no autorizado.
-- **Gestión de Usuarios:** Sistema de roles y permisos granulares (RBAC).
-- **Reportes:** Visualización de métricas y estadísticas operativas.
-- **Seguridad:** Autenticación JWT y auditoría de acciones.
-
-## Tecnologías Utilizadas
-
-- **Backend:** Node.js, Express, Sequelize ORM.
-- **Frontend:** React, Tailwind CSS, Lucide React.
-- **Base de Datos:** MySQL / PostgreSQL.
+- **Gestión de Inventario**: Control de stock, movimientos (entradas/salidas) y categorías.
+- **Gestión de Usuarios**: Administración de roles (Admin, Supervisor, Guardia) y permisos granulares.
+- **Reportes y Dashboard**: Visualización de KPIs, actividad semanal y estadísticas de consumo.
+- **Bitácora**: Registro de eventos y auditoría de acciones.
 
 ## Instalación
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/iTzAsaro/Syseg-web-page.git
-   cd Syseg-web-page
-   ```
+1.  **Clonar el repositorio**:
+    ```bash
+    git clone <url-del-repo>
+    cd syseg-web-gestion
+    ```
 
-2. **Instalar dependencias del Backend:**
-   ```bash
-   npm install
-   ```
+2.  **Instalar dependencias**:
+    ```bash
+    npm install
+    cd frontend
+    npm install
+    cd ..
+    ```
 
-3. **Instalar dependencias del Frontend:**
-   ```bash
-   cd frontend
-   npm install
-   cd ..
-   ```
+3.  **Configurar entorno**:
+    - Crear archivo `.env` en la raíz con las variables necesarias (DB_HOST, JWT_SECRET, etc.).
 
-4. **Configuración:**
-   - Crear un archivo `.env` en la raíz basado en el ejemplo proporcionado.
-   - Configurar las credenciales de la base de datos y claves secretas JWT.
+4.  **Ejecutar la aplicación**:
+    - Backend: `npm start` o `npm run dev`
+    - Frontend: `npm run dev` (dentro de carpeta frontend)
 
-5. **Ejecutar la aplicación:**
-   ```bash
-   # En modo desarrollo
-   npm run dev
-   ```
+## Carga de Datos Iniciales (Seeding)
 
-## Estructura del Proyecto
+Para poblar la base de datos con datos de prueba para los reportes y pruebas de integración:
 
-- `/controllers`: Lógica de negocio y controladores de la API.
-- `/models`: Definiciones de modelos de datos (Sequelize).
-- `/routes`: Definición de rutas de la API.
-- `/frontend`: Código fuente de la interfaz de usuario (React).
-- `/middleware`: Middlewares de autenticación y validación.
+1.  **Cargar datos**:
+    Ejecuta el script de seeding que generará usuarios, productos y movimientos históricos.
+    ```bash
+    node scripts/seed_reports.js
+    ```
+    *Nota: Esto creará usuarios de prueba (ej. `test1@syseg.com` / `123456`) y ~150 movimientos.*
+
+2.  **Limpiar datos**:
+    Para eliminar los datos generados (movimientos):
+    ```bash
+    node scripts/unseed_reports.js
+    ```
 
 ## Flujo de Trabajo Git
 
-Este proyecto utiliza el siguiente flujo de ramas:
-- `main`: Rama de producción (estable).
-- `testing`: Rama para pruebas de integración y QA.
-- `development`: Rama principal de desarrollo para nuevas características.
+Este proyecto sigue un flujo de trabajo estructurado:
+- **main**: Código de producción estable.
+- **development**: Rama principal de desarrollo e integración.
+- **testing**: Rama para pruebas y validación antes de producción.
 
-## Contribución
+## Pruebas
 
-1. Crear una rama desde `development` para la nueva característica.
-2. Realizar los cambios y hacer commits descriptivos en español.
-3. Enviar un Pull Request hacia `development`.
+Para ejecutar los tests de integración de reportes:
+```bash
+npx jest tests/integration/reportes.test.js
+```
+*Asegúrate de haber ejecutado el seed primero.*
