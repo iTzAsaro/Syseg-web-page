@@ -562,6 +562,17 @@ const DashboardGuardia = () => {
                                 <p className="text-gray-400 text-xs mt-2 leading-relaxed">Pacto de horas extraordinarias (Art. 32 Código del Trabajo).</p>
                             </div>
                         </div>
+
+                        {/* Acta Deberes Card */}
+                        <div onClick={() => handleViewChange('actaDeberes')} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:bg-gray-750 hover:border-blue-500/50 cursor-pointer transition-all group relative overflow-hidden shadow-lg">
+                             <div className="relative z-10">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-4 border ${docsStatus.actaDeberes === 'completed' ? 'bg-green-900/30 text-green-400 border-green-900/50' : 'bg-yellow-900/30 text-yellow-500 border-yellow-900/50'}`}>
+                                    {docsStatus.actaDeberes === 'completed' ? 'Completado' : 'Pendiente'}
+                                </span>
+                                <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Acta Deberes y Obligaciones</h4>
+                                <p className="text-gray-400 text-xs mt-2 leading-relaxed">Notificación oficial de deberes y obligaciones del guardia.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -872,6 +883,135 @@ const DashboardGuardia = () => {
                                 <button onClick={finalizeDocument} className="px-6 py-3 rounded-lg bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2 transform active:scale-95 transition-all">
                                     <CheckCircle className="w-5 h-5" />
                                     Aceptar Pacto y Firmar
+                                </button>
+                             )}
+                          </div>
+                     </div>
+                </div>
+            )}
+
+            {/* VISTA 7: ACTA DEBERES (PDF + FIRMA) */}
+            {currentView === 'actaDeberes' && (
+                <div className="fade-in max-w-4xl mx-auto">
+                     <div className="flex justify-between items-center mb-6">
+                         <button onClick={() => handleViewChange('list')} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg border border-gray-700 text-sm">
+                             <ChevronLeft className="w-4 h-4" /> Volver
+                         </button>
+                         <div className="flex items-center gap-3">
+                             {docsStatus.actaDeberes === 'completed' && (
+                                <span className="px-3 py-1 rounded text-xs uppercase font-bold tracking-wider bg-green-900/20 text-green-500 border border-green-900/50 flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4" /> Firmado y Entregado
+                                </span>
+                             )}
+                         </div>
+                     </div>
+
+                     <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl overflow-hidden p-6 md:p-8 space-y-8">
+                          {/* Title */}
+                          <div className="text-center border-b border-gray-700 pb-6">
+                              <h2 className="text-xl md:text-2xl font-bold text-white uppercase tracking-wide">Acta de Notificación</h2>
+                              <h3 className="text-sm md:text-lg text-blue-500 font-bold uppercase mt-2">Deberes y Obligaciones Guardias de Seguridad</h3>
+                          </div>
+
+                          {/* Content Text */}
+                          <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 text-gray-300 leading-relaxed text-justify text-sm md:text-base space-y-6">
+                              <p>
+                                  En Santiago, a <strong className="text-white">{new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, se deja constancia que el trabajador individualizado al pie de la presente,
+                                  ha sido notificado de sus <strong>Deberes y Obligaciones</strong> fundamentales para el desempeño de sus funciones como Guardia de Seguridad en <strong>SYSEG SUR SPA</strong>.
+                              </p>
+
+                              <div className="bg-gray-800/50 p-5 rounded border border-gray-700">
+                                  <h4 className="text-red-500 font-bold uppercase text-xs mb-4 border-b border-gray-600 pb-2 tracking-wider">1. Obligaciones Fundamentales (Normativa OS-10)</h4>
+                                  <ul className="list-disc pl-5 space-y-3 text-xs md:text-sm text-gray-300">
+                                      <li><strong className="text-white">Credencial OS-10:</strong> Portar siempre su credencial de Guardia de Seguridad vigente y visible en la parte superior izquierda del pecho.</li>
+                                      <li><strong className="text-white">Uniforme e Imagen:</strong> Mantener una presentación personal impecable (afeitado, pelo corto/ordenado), usando correctamente el uniforme completo entregado por la empresa.</li>
+                                      <li><strong className="text-white">Puntualidad y Asistencia:</strong> Presentarse en su puesto de trabajo con la debida antelación. Cualquier inasistencia debe ser avisada y justificada de inmediato.</li>
+                                      <li><strong className="text-white">Libro de Novedades:</strong> Es obligación registrar cronológicamente todas las novedades, rondas, ingresos y sucesos relevantes en el Libro de Novedades (Bitácora).</li>
+                                  </ul>
+                              </div>
+
+                              <div className="bg-gray-800/50 p-5 rounded border border-gray-700">
+                                  <h4 className="text-red-500 font-bold uppercase text-xs mb-4 border-b border-gray-600 pb-2 tracking-wider">2. Prohibiciones Estrictas</h4>
+                                  <ul className="list-disc pl-5 space-y-3 text-xs md:text-sm text-gray-300">
+                                      <li><strong className="text-red-400">Consumo de Sustancias:</strong> Queda estrictamente prohibido presentarse bajo la influencia del alcohol o drogas, o consumirlos durante el turno.</li>
+                                      <li><strong className="text-red-400">Abandono de Puesto:</strong> Nunca abandonar el puesto de trabajo sin relevo autorizado o instrucción directa de supervisión.</li>
+                                      <li><strong className="text-red-400">Uso de Celular:</strong> Se prohíbe el uso de teléfonos celulares para juegos, videos o redes sociales que distraigan de la función de vigilancia.</li>
+                                      <li><strong className="text-red-400">Dormir:</strong> Dormir durante el turno de trabajo es una falta grave a la seguridad de la instalación.</li>
+                                  </ul>
+                              </div>
+                          </div>
+
+                          {/* Form Fields */}
+                          <div>
+                              <h3 className="section-title">Individualización del Trabajador</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div className="md:col-span-2">
+                                      <label className="form-label">Nombre Completo</label>
+                                      <input type="text" className="form-input" placeholder="Ingrese su nombre completo" disabled={docsStatus.actaDeberes === 'completed'} />
+                                  </div>
+                                  <div>
+                                      <label className="form-label">R.U.T.</label>
+                                      <input type="text" className="form-input" placeholder="12.345.678-9" disabled={docsStatus.actaDeberes === 'completed'} />
+                                  </div>
+                                  <div>
+                                      <label className="form-label">Instalación</label>
+                                      <input type="text" className="form-input" placeholder="Lugar de trabajo" disabled={docsStatus.actaDeberes === 'completed'} />
+                                  </div>
+                              </div>
+                          </div>
+                          
+                          <div className="bg-gray-900/50 p-4 rounded border border-gray-700">
+                                <p className="text-sm text-gray-300 text-justify">
+                                    Declaro haber recibido, leído y comprendido el presente documento "Acta de Notificación Deberes y Obligaciones Guardias de Seguridad SYSEG", y me comprometo a cumplir con lo estipulado.
+                                </p>
+                          </div>
+
+                          {/* Signature Section */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                              <div>
+                                  <h3 className="section-title text-center mb-4">Firma Trabajador</h3>
+                                  <div className="bg-gray-200 rounded-lg p-4 text-gray-800">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-xs text-gray-500 font-bold uppercase">Firma Digital</span>
+                                            {docsStatus.actaDeberes !== 'completed' && (
+                                                <button onClick={clearSignature} className="text-xs text-red-600 hover:text-red-800 font-bold underline">Borrar</button>
+                                            )}
+                                        </div>
+                                        <div className={`bg-white border-2 border-dashed border-gray-400 rounded cursor-crosshair relative h-32 ${docsStatus.actaDeberes === 'completed' ? 'bg-gray-100 cursor-not-allowed' : ''}`}>
+                                            <canvas 
+                                                ref={canvasRef}
+                                                onMouseDown={startDrawing}
+                                                onMouseMove={draw}
+                                                onMouseUp={stopDrawing}
+                                                onMouseLeave={stopDrawing}
+                                                onTouchStart={startDrawing}
+                                                onTouchMove={draw}
+                                                onTouchEnd={stopDrawing}
+                                                className="w-full h-full touch-none"
+                                            />
+                                            <span className="sign-placeholder absolute bottom-2 left-2 text-[10px] text-gray-400 pointer-events-none">Dibuje su firma aquí</span>
+                                        </div>
+                                  </div>
+                              </div>
+                              
+                              <div>
+                                  <h3 className="section-title text-center mb-4">Firma Supervisor / Empleador</h3>
+                                  <div className="bg-gray-200 rounded-lg p-4 text-gray-800 opacity-80">
+                                        <div className="h-32 border-2 border-solid border-gray-400 bg-white rounded flex flex-col items-center justify-center">
+                                            <span className="font-script text-2xl text-blue-900 mb-1" style={{ fontFamily: 'cursive' }}>Syseg Sur SpA</span>
+                                            <div className="w-3/4 h-px bg-gray-400 mb-1"></div>
+                                            <span className="text-[10px] font-bold uppercase text-gray-600">Supervisor de Turno</span>
+                                        </div>
+                                  </div>
+                              </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex justify-end pt-4 border-t border-gray-700">
+                             {docsStatus.actaDeberes !== 'completed' && (
+                                <button onClick={finalizeDocument} className="px-6 py-3 rounded-lg bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2 transform active:scale-95 transition-all">
+                                    <CheckCircle className="w-5 h-5" />
+                                    Confirmar Recepción y Firmar
                                 </button>
                              )}
                           </div>
