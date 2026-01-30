@@ -65,10 +65,10 @@ Este proyecto es una plataforma web diseñada para optimizar la administración 
 Este proyecto utiliza el siguiente flujo de ramas:
 - `main`: Rama de producción (estable).
 - `testing`: Rama para pruebas de integración y QA.
-- `desarrollo`: Rama principal de desarrollo para nuevas características.
+- `development`: Rama principal de desarrollo para nuevas características.
 
 ## Contribución
 
-1. Crear una rama desde `desarrollo` para la nueva característica.
+1. Crear una rama desde `development` para la nueva característica.
 2. Realizar los cambios y hacer commits descriptivos en español.
-3. Enviar un Pull Request hacia `desarrollo`.
+3. Enviar un Pull Request hacia `development`.
