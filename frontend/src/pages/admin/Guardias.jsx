@@ -1,56 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { 
     UserPlus, Search, User, Phone, Mail, AlertOctagon, Shirt, 
-    CreditCard, Smartphone, Trash2, Save, X, ShieldCheck,
-    ChevronLeft, ChevronRight, AlertCircle, Loader2
+    CreditCard, Smartphone, Trash2, Save, X, ShieldCheck, Loader2 
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import guardiaService from '../../services/guardiaService';
 import RequirePermission from '../../components/RequirePermission';
-
-// Funciones auxiliares para RUT y Texto
-const formatRut = (rut) => {
-    if (!rut) return '';
-    const cleanRut = rut.replace(/[^0-9kK]/g, '');
-    if (cleanRut.length <= 1) return cleanRut;
-    const body = cleanRut.slice(0, -1);
-    const dv = cleanRut.slice(-1).toUpperCase();
-    return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`;
-};
-
-const validateRut = (rut) => {
-    if (!rut) return false;
-    const cleanRut = rut.replace(/[^0-9kK]/g, '');
-    if (cleanRut.length < 2) return false;
-    const body = cleanRut.slice(0, -1);
-    const dv = cleanRut.slice(-1).toUpperCase();
-    let sum = 0;
-    let multiplier = 2;
-    for (let i = body.length - 1; i >= 0; i--) {
-        sum += parseInt(body[i]) * multiplier;
-        multiplier = multiplier === 7 ? 2 : multiplier + 1;
-    }
-    const res = 11 - (sum % 11);
-    const calculatedDv = res === 11 ? '0' : res === 10 ? 'K' : res.toString();
-    return dv === calculatedDv;
-};
-
-const toTitleCase = (str) => {
-    return str.replace(/\w\S*/g, (txt) => {
-        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-    });
-};
+import Swal from 'sweetalert2';
 
 const Guardias = () => {
     const [guards, setGuards] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchError, setSearchError] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('personal');
     const [editingId, setEditingId] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [deletingId, setDeletingId] = useState(null);
     
     // Estado del formulario
     const initialFormState = {
@@ -83,7 +47,6 @@ const Guardias = () => {
     }, []);
 
     const fetchGuards = async () => {
-        setLoading(true);
         try {
             const data = await guardiaService.getAll();
             setGuards(data);
@@ -91,8 +54,6 @@ const Guardias = () => {
             // Ignorar errores 401 ya que son manejados por el interceptor
             if (error.response && error.response.status === 401) return;
             console.error("Error cargando guardias:", error);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -156,68 +117,52 @@ const Guardias = () => {
 
     const handleDelete = async (id, e) => {
         e.stopPropagation();
-        if (window.confirm('¿Seguro que desea eliminar este guardia?')) {
+        
+        const result = await Swal.fire({
+            title: '¿Está seguro de eliminar esta guardia?',
+            text: "No podrás revertir esto. Se eliminará el guardia permanentemente.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí',
+            cancelButtonText: 'No'
+        });
+
+        if (result.isConfirmed) {
+            setDeletingId(id);
             try {
                 await guardiaService.remove(id);
-                fetchGuards();
+                // Optimistic update
+                setGuards(prevGuards => prevGuards.filter(g => g.id !== id));
+                
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'bottom-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: 'success',
+                    title: 'Guardia eliminada correctamente'
+                });
             } catch (error) {
-                alert("Error eliminando: " + error.message);
+                console.error("Error eliminando:", error);
+                Swal.fire(
+                    'Error',
+                    'No se pudo eliminar la guardia',
+                    'error'
+                );
+            } finally {
+                setDeletingId(null);
             }
         }
-    };
-
-    const handleSearchChange = (e) => {
-        let value = e.target.value;
-        
-        if (value.length === 0) {
-            setSearchTerm('');
-            setSearchError('');
-            setCurrentPage(1);
-            return;
-        }
-
-        const firstChar = value.charAt(0);
-        
-        // Detectar tipo de búsqueda y aplicar lógica
-        if (/[0-9]/.test(firstChar)) {
-            // Lógica RUT: solo números y k/K
-            const clean = value.replace(/[^0-9kK]/g, '');
-            // Formatear mientras escribe
-            const formatted = formatRut(clean);
-            value = formatted;
-            
-            // Validar RUT completo (si tiene al menos un cuerpo y DV)
-            if (clean.length > 1 && !validateRut(clean)) {
-                setSearchError('RUT inválido');
-            } else {
-                setSearchError('');
-            }
-        } else if (/[a-zA-Z\u00C0-\u00FF]/.test(firstChar)) {
-            // Lógica Nombre: solo letras y espacios
-            value = value.replace(/[^a-zA-Z\u00C0-\u00FF\s]/g, ''); // Incluir acentos
-            value = toTitleCase(value);
-            
-            if (value.length > 0 && value.length < 3) {
-                setSearchError('Mínimo 3 caracteres');
-            } else {
-                setSearchError('');
-            }
-        }
-        
-        setSearchTerm(value);
-        setCurrentPage(1);
     };
 
     const filteredGuards = guards.filter(g => 
         (g.nombre?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
         (g.rut || '').includes(searchTerm)
-    );
-
-    // Paginación
-    const totalPages = Math.ceil(filteredGuards.length / itemsPerPage);
-    const paginatedGuards = filteredGuards.slice(
-        (currentPage - 1) * itemsPerPage, 
-        currentPage * itemsPerPage
     );
 
     return (
@@ -240,136 +185,115 @@ const Guardias = () => {
             </div>
 
             {/* Search & Filters */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                <div className="relative w-full max-w-xl">
-                    <div className="relative">
-                        <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
-                        <input 
-                            type="text" 
-                            placeholder="Buscar por RUT o nombre" 
-                            className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border ${searchError ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-black'} rounded-xl text-sm font-medium outline-none focus:ring-2 transition-all`}
-                            value={searchTerm}
-                            onChange={handleSearchChange}
-                        />
-                        {loading && (
-                            <Loader2 className="w-5 h-5 text-gray-400 absolute right-4 top-1/2 transform -translate-y-1/2 animate-spin" />
-                        )}
-                    </div>
-                    {searchError && (
-                        <div className="absolute -bottom-6 left-0 flex items-center gap-1.5 text-xs text-red-600 font-medium animate-in fade-in slide-in-from-top-1">
-                            <AlertCircle className="w-3.5 h-3.5" />
-                            {searchError}
-                        </div>
-                    )}
+            <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                <div className="relative w-full">
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar por nombre o RUT..." 
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-black transition-all"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
             </div>
 
-            {/* Tabla Responsive */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead>
-                            <tr className="bg-gray-50/50 border-b border-gray-100">
-                                <th className="px-6 py-4 font-bold text-gray-900">Nombre Completo</th>
-                                <th className="px-6 py-4 font-bold text-gray-900">RUT</th>
-                                <th className="px-6 py-4 font-bold text-gray-900 text-center">Estado</th>
-                                <th className="px-6 py-4 font-bold text-gray-900 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {paginatedGuards.length > 0 ? (
-                                paginatedGuards.map(guard => (
-                                    <tr key={guard.id} className="hover:bg-gray-50/50 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
-                                                    {guard.nombre ? guard.nombre.charAt(0) : '?'}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-900">{guard.nombre}</h4>
-                                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                                                        <Mail className="w-3 h-3" /> {guard.email || 'Sin email'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 font-mono text-gray-600">
-                                            {guard.rut}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${guard.activo_app ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                                                <div className={`w-2 h-2 rounded-full ${guard.activo_app ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                                {guard.activo_app ? 'Activo' : 'Inactivo'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <RequirePermission permission="EDITAR_GUARDIA">
-                                                    <button 
-                                                        onClick={() => handleOpenModal(guard)} 
-                                                        className="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-black hover:text-white hover:border-black transition-all shadow-sm"
-                                                        title="Editar ficha"
-                                                    >
-                                                        <User className="w-4 h-4" />
-                                                    </button>
-                                                </RequirePermission>
-                                                <RequirePermission permission="ELIMINAR_GUARDIA">
-                                                    <button 
-                                                        onClick={(e) => handleDelete(guard.id, e)} 
-                                                        className="p-2 bg-white border border-gray-200 text-gray-400 rounded-lg hover:text-red-600 hover:border-red-200 transition-all shadow-sm"
-                                                        title="Eliminar"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </RequirePermission>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
-                                                <Search className="w-6 h-6 text-gray-300" />
-                                            </div>
-                                            <p className="font-medium">No se encontraron resultados</p>
-                                            <p className="text-xs text-gray-400">Intente con otro término de búsqueda</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+            {/* Grid Cards Guardias */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                {filteredGuards.map(guard => (
+                    <div key={guard.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group flex flex-col relative">
+                        <div className="p-6 pb-4 border-b border-gray-50 flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-2xl bg-gray-900 flex items-center justify-center text-white font-black text-xl border border-gray-200 shadow-lg relative overflow-hidden">
+                                    {guard.nombre ? guard.nombre.charAt(0) : '?'}
+                                    <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-gray-900 ${guard.activo_app ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900 text-lg leading-tight">{guard.nombre}</h4>
+                                    <p className="text-xs text-gray-400 font-mono mt-1 tracking-wide">{guard.rut}</p>
+                                </div>
+                            </div>
+                            <div className="bg-gray-50 p-2 rounded-lg">
+                                {guard.activo_app ? (
+                                    <Smartphone className="w-5 h-5 text-green-600" />
+                                ) : (
+                                    <Smartphone className="w-5 h-5 text-gray-300" />
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="p-6 flex-1 space-y-5">
+                            {/* Info Personal & Contacto */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <Phone className="w-3.5 h-3.5 text-gray-400" /> 
+                                    <span className="truncate font-medium">{guard.celular || 'Sin celular'}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <Mail className="w-4 h-4 text-gray-400" /> 
+                                    <span className="truncate">{guard.email || 'Sin email'}</span>
+                                </div>
+                                {(guard.nombre_emergencia || guard.fono_emergencia) && (
+                                    <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 p-1.5 rounded-lg border border-red-100 mt-1">
+                                        <AlertOctagon className="w-3.5 h-3.5 shrink-0" />
+                                        <span className="truncate"><strong>{guard.nombre_emergencia}</strong>: {guard.fono_emergencia}</span>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Tags Tallas */}
+                            <div className="flex gap-2 pt-2">
+                                <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                                    <Shirt className="w-3 h-3" /> {guard.talla_camisa || '-'}
+                                </span>
+                                <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-500">
+                                    P: {guard.talla_pantalon || '-'}
+                                </span>
+                                <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                                    <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M21.5,9C20.6,9 19.8,9.6 19.6,10.5L18.5,15.1C18.2,16.2 17.2,17 16.1,17H8.9L10.6,9.9C10.9,8.2 12.4,7 14.1,7H16V5H14.1C11.5,5 9.2,6.8 8.7,9.3L6.2,20H2V22H16.1C18.2,22 20.1,20.5 20.5,18.7L21.9,13H22V9H21.5Z"></path></svg>
+                                    {guard.talla_zapato || '-'}
+                                </span>
+                            </div>
 
-                {/* Paginación */}
-                {totalPages > 1 && (
-                    <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/30">
-                        <span className="text-xs text-gray-500 font-medium">
-                            Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, filteredGuards.length)} - {Math.min(currentPage * itemsPerPage, filteredGuards.length)} de {filteredGuards.length} guardias
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="p-2 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
-                            >
-                                <ChevronLeft className="w-4 h-4 text-gray-600" />
-                            </button>
-                            <span className="text-xs font-bold text-gray-900 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
-                                {currentPage} / {totalPages}
-                            </span>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="p-2 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
-                            >
-                                <ChevronRight className="w-4 h-4 text-gray-600" />
-                            </button>
+                            {/* Banco */}
+                             <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                                    <span className="text-xs font-bold text-blue-800">{guard.banco_nombre || 'Sin Banco'}</span>
+                                </div>
+                                <p className="text-[10px] text-blue-600 pl-5.5">
+                                    {guard.banco_tipo_cuenta || ''} • {guard.banco_numero_cuenta || ''}
+                                </p>
+                            </div>
+                            
+                            {/* App Status */}
+                            <div className="flex items-center justify-between text-xs pt-1">
+                                <span className="text-gray-400 font-medium">Último acceso:</span>
+                                <span className="text-gray-900 font-bold">{guard.ultimo_acceso ? new Date(guard.ultimo_acceso).toLocaleString() : 'Nunca'}</span>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-2">
+                            <RequirePermission permission="EDITAR_GUARDIA">
+                                <button 
+                                    onClick={() => handleOpenModal(guard)} 
+                                    className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-black hover:text-white hover:border-black transition-colors shadow-sm"
+                                >
+                                    Ver / Editar
+                                </button>
+                            </RequirePermission>
+                            <RequirePermission permission="ELIMINAR_GUARDIA">
+                                <button 
+                                    onClick={(e) => handleDelete(guard.id, e)} 
+                                    disabled={deletingId === guard.id}
+                                    className={`p-2.5 bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 rounded-xl transition-colors shadow-sm ${deletingId === guard.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {deletingId === guard.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                </button>
+                            </RequirePermission>
                         </div>
                     </div>
-                )}
+                ))}
             </div>
 
             {/* MODAL GUARDIA */}
