@@ -80,10 +80,6 @@ const Dashboard = () => {
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Resumen Operativo</h2>
                 <p className="text-gray-500 mt-1">Vista general del estado actual del sistema</p>
             </div>
-            <button className="w-full sm:w-auto bg-black text-white px-5 py-3 rounded-xl text-sm font-bold hover:bg-gray-900 transition-all shadow-lg shadow-black/20 flex items-center justify-center gap-2 transform active:scale-95">
-                <Package className="w-4 h-4" /> 
-                Nuevo Producto
-            </button>
         </div>
 
         {/* KPI Grid */}
