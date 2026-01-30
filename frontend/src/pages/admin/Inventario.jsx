@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, Filter, Plus, Box, Edit, Trash2, ShoppingCart, Download 
+  Search, Filter, Plus, Box, Edit, Trash2, ShoppingCart, Tag, ChevronDown, Check 
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import ProductModal from '../../components/ProductModal';
+import CategoryModal from '../../components/CategoryModal';
 import { useCart } from '../../context/CartContext';
 import RequirePermission from '../../components/RequirePermission';
 import productoService from '../../services/productoService';
+import categoriaService from '../../services/categoriaService';
 import Swal from 'sweetalert2';
-import * as XLSX from 'xlsx';
 
 // --- VISTA: INVENTARIO CON CARRITO Y MODAL ---
 const Inventario = () => {
@@ -19,35 +20,46 @@ const Inventario = () => {
   const { addToCart } = useCart();
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Estados para el Modal de Producto
+  // Estados para el Modal de Producto y Categoría
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
-  // Cargar productos desde el backend
-  const fetchProducts = async () => {
+  // Estados para Filtros y Categorías
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null); // null = Todas
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Cargar productos y categorías desde el backend
+  const fetchData = async () => {
       try {
           setLoading(true);
-          const data = await productoService.getAll();
-          // Mapear datos si es necesario para ajustar nombres de propiedades
-          // Backend: nombre, stock_actual, stock_minimo, categoria_id, Categoria.nombre
-          const mappedProducts = data.map(p => ({
+          const [productsData, categoriesData] = await Promise.all([
+              productoService.getAll(),
+              categoriaService.getAll()
+          ]);
+          
+          // Mapear datos de productos
+          const mappedProducts = productsData.map(p => ({
               ...p,
               name: p.nombre,
               stock: p.stock_actual,
               minStock: p.stock_minimo,
-              category: p.Categoria ? p.Categoria.nombre : 'Sin Categoría'
+              category: p.Categoria ? p.Categoria.nombre : 'Sin Categoría',
+              categoryId: p.categoria_id
           }));
           setProducts(mappedProducts);
+          setCategories(categoriesData);
       } catch (error) {
-          console.error("Error cargando productos:", error);
-          Swal.fire('Error', 'No se pudieron cargar los productos.', 'error');
+          console.error("Error cargando datos:", error);
+          Swal.fire('Error', 'No se pudieron cargar los datos.', 'error');
       } finally {
           setLoading(false);
       }
   };
 
   useEffect(() => {
-      fetchProducts();
+      fetchData();
   }, []);
 
   // --- LÓGICA DE PRODUCTOS ---
@@ -90,22 +102,20 @@ const Inventario = () => {
               nombre: productData.name,
               stock_actual: parseInt(productData.stock),
             stock_minimo: parseInt(productData.minStock),
-            descripcion: productData.description, // Asumiendo que el modal enviará description
+            descripcion: productData.description,
               precio: parseInt(productData.price),
               costo: parseInt(productData.cost),
-              categoria_id: productData.categoryId // El modal debe enviar el ID
+              categoria_id: productData.categoryId
           };
 
           if (editingProduct) {
-              // Editar existente
               await productoService.update(editingProduct.id, payload);
               Swal.fire('Actualizado', 'Producto actualizado correctamente.', 'success');
           } else {
-              // Crear nuevo
               await productoService.create(payload);
               Swal.fire('Creado', 'Producto creado correctamente.', 'success');
           }
-          fetchProducts(); // Recargar lista
+          fetchData(); // Recargar todo
           setIsModalOpen(false);
       } catch (error) {
           console.error("Error guardando producto:", error);
@@ -113,27 +123,29 @@ const Inventario = () => {
       }
   };
 
-  // Exportar a Excel
-  const handleExport = () => {
-      const ws = XLSX.utils.json_to_sheet(products.map(p => ({
-        ID: p.id,
-        Nombre: p.name,
-        Categoría: p.category,
-          Stock: p.stock,
-          'Stock Mínimo': p.minStock
-      })));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Inventario");
-      XLSX.writeFile(wb, "Inventario_Syseg.xlsx");
+  // --- LÓGICA DE CATEGORÍAS ---
+  const handleSaveCategory = async (categoryData) => {
+      try {
+          await categoriaService.create(categoryData);
+          Swal.fire('Creado', 'Categoría creada correctamente.', 'success');
+          fetchData(); // Recargar categorías y productos
+          setIsCategoryModalOpen(false);
+      } catch (error) {
+          console.error("Error guardando categoría:", error);
+          Swal.fire('Error', 'No se pudo guardar la categoría.', 'error');
+      }
   };
 
   // --- FILTROS ---
-  const filteredProducts = products.filter(item => 
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      item.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            item.category.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory ? item.categoryId === selectedCategory.id : true;
+      
+      return matchesSearch && matchesCategory;
+  });
 
-  // Helper visual para BADGES (Sin barras)
+  // Helper visual para BADGES
   const getStockBadge = (stock, min) => {
     if (stock <= min / 2) return <span className="text-red-700 bg-red-50 border border-red-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">Crítico</span>;
     if (stock <= min) return <span className="text-orange-700 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">Bajo</span>;
@@ -152,6 +164,13 @@ const Inventario = () => {
             product={editingProduct}
         />
 
+        {/* Modal de Categoría */}
+        <CategoryModal
+            isOpen={isCategoryModalOpen}
+            onClose={() => setIsCategoryModalOpen(false)}
+            onSave={handleSaveCategory}
+        />
+
         {/* Header Inventario */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
@@ -159,13 +178,15 @@ const Inventario = () => {
             <p className="text-gray-500 mt-1 text-sm sm:text-base">Control de existencias y asignación de equipos</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-              <button 
-                  onClick={handleExport}
-                  className="bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm flex items-center justify-center gap-2"
-              >
-                  <Download className="w-4 h-4" />
-                  Exportar
-              </button>
+              <RequirePermission permission="CREAR_PRODUCTO">
+                  <button 
+                      onClick={() => setIsCategoryModalOpen(true)}
+                      className="bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm flex items-center justify-center gap-2"
+                  >
+                      <Tag className="w-4 h-4" />
+                      Agregar Categoría
+                  </button>
+              </RequirePermission>
               <RequirePermission permission="CREAR_PRODUCTO">
                   <button 
                       onClick={handleAddNew}
@@ -190,10 +211,61 @@ const Inventario = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
               />
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-              <button className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors">
-                  <Filter className="w-4 h-4" /> Categoría
+          <div className="relative w-full lg:w-auto">
+              <button 
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors w-full lg:w-auto ${
+                      selectedCategory 
+                      ? 'bg-black text-white shadow-lg shadow-black/20 hover:bg-gray-900' 
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+              >
+                  <Filter className="w-4 h-4" /> 
+                  {selectedCategory ? selectedCategory.nombre : 'Todas las Categorías'}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
               </button>
+
+              {/* Menú Desplegable de Categorías */}
+              {isFilterOpen && (
+                  <>
+                      <div 
+                          className="fixed inset-0 z-10" 
+                          onClick={() => setIsFilterOpen(false)}
+                      ></div>
+                      <div className="absolute top-full left-0 mt-2 w-full sm:w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20 animate-in fade-in slide-in-from-top-2">
+                          <button
+                              onClick={() => {
+                                  setSelectedCategory(null);
+                                  setIsFilterOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center justify-between ${
+                                  !selectedCategory ? 'font-bold text-black bg-gray-50' : 'text-gray-600'
+                              }`}
+                          >
+                              Todas las Categorías
+                              {!selectedCategory && <Check className="w-4 h-4" />}
+                          </button>
+                          <div className="h-px bg-gray-100 my-1"></div>
+                          <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                              {categories.map(cat => (
+                                  <button
+                                      key={cat.id}
+                                      onClick={() => {
+                                          setSelectedCategory(cat);
+                                          setIsFilterOpen(false);
+                                      }}
+                                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center justify-between ${
+                                          selectedCategory?.id === cat.id ? 'font-bold text-black bg-gray-50' : 'text-gray-600'
+                                      }`}
+                                  >
+                                      {cat.nombre}
+                                      {selectedCategory?.id === cat.id && <Check className="w-4 h-4" />}
+                                  </button>
+                              ))}
+                          </div>
+                      </div>
+                  </>
+              )}
           </div>
           <div className="hidden lg:block h-8 w-px bg-gray-200 mx-2"></div>
           <span className="text-xs text-gray-400 self-end lg:self-center hidden lg:block">{filteredProducts.length} artículos</span>
