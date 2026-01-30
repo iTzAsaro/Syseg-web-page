@@ -70,7 +70,8 @@ const DashboardGuardia = () => {
   const [docsStatus, setDocsStatus] = useState({
     ficha: 'pending',
     irl: 'pending',
-    reglamento: 'pending'
+    reglamento: 'pending',
+    pactoHoras: 'pending'
   });
   const [externalHtml, setExternalHtml] = useState(null);
   const [isLoadingExternal, setIsLoadingExternal] = useState(false);
@@ -88,7 +89,7 @@ const DashboardGuardia = () => {
 
   // --- Efectos ---
   useEffect(() => {
-    if ((currentView === 'ficha' || currentView === 'irl') && canvasRef.current) {
+    if ((currentView === 'ficha' || currentView === 'irl' || currentView === 'reglamento' || currentView === 'pactoHoras') && canvasRef.current) {
       initCanvas();
     }
   }, [currentView, irlPage, viewMode]);
@@ -502,8 +503,7 @@ const DashboardGuardia = () => {
             </div>
         </header>
 
-        {/* CONTENIDO DINÁMICO */}
-        <div ref={mainScrollAreaRef} className={`flex-1 relative ${(currentView === 'irl-external' || currentView === 'reglamento') ? 'p-0 overflow-hidden' : 'overflow-y-auto p-4 sm:p-8'}`}>
+        <div ref={mainScrollAreaRef} className={`flex-1 relative ${currentView === 'irl-external' ? 'p-0 overflow-hidden' : 'overflow-y-auto p-4 sm:p-8'}`}>
             
             {/* VISTA 1: LISTA */}
             {currentView === 'list' && (
@@ -549,6 +549,17 @@ const DashboardGuardia = () => {
                                 </span>
                                 <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Reglamento Interno</h4>
                                 <p className="text-gray-400 text-xs mt-2 leading-relaxed">Reglamento Interno de Orden, Higiene y Seguridad (RIOHS).</p>
+                            </div>
+                        </div>
+
+                        {/* Pacto Horas Extras Card */}
+                        <div onClick={() => handleViewChange('pactoHoras')} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:bg-gray-750 hover:border-blue-500/50 cursor-pointer transition-all group relative overflow-hidden shadow-lg">
+                             <div className="relative z-10">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-4 border ${docsStatus.pactoHoras === 'completed' ? 'bg-green-900/30 text-green-400 border-green-900/50' : 'bg-yellow-900/30 text-yellow-500 border-yellow-900/50'}`}>
+                                    {docsStatus.pactoHoras === 'completed' ? 'Completado' : 'Pendiente'}
+                                </span>
+                                <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Pacto Horas Extras</h4>
+                                <p className="text-gray-400 text-xs mt-2 leading-relaxed">Pacto de horas extraordinarias (Art. 32 Código del Trabajo).</p>
                             </div>
                         </div>
                     </div>
@@ -651,38 +662,219 @@ const DashboardGuardia = () => {
                 </div>
             )}
 
-            {/* VISTA 5: REGLAMENTO INTERNO */}
+            {/* VISTA 5: REGLAMENTO INTERNO (FORMULARIO) */}
             {currentView === 'reglamento' && (
-                <div className="fade-in w-full h-full flex flex-col bg-gray-900">
-                     <div className="sticky top-0 z-40 bg-gray-900 border-b border-gray-800 p-4 flex justify-between items-center shrink-0">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => handleViewChange('list')} className="flex items-center text-gray-400 hover:text-white transition-colors text-sm font-medium">
-                                <ChevronLeft className="h-4 w-4 mr-1" />
-                                Volver
-                            </button>
-                            <h3 className="text-white font-bold text-lg hidden sm:block">Reglamento Interno</h3>
-                        </div>
-                        
-                        <div className="flex items-center gap-3">
-                             {docsStatus.reglamento !== 'completed' ? (
-                                <button onClick={finalizeDocument} className="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold text-xs sm:text-sm shadow-lg hover:bg-blue-700 flex items-center gap-2 transform active:scale-95 transition-all">
-                                    <CheckCircle className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Confirmar Lectura</span>
-                                    <span className="sm:hidden">Confirmar</span>
-                                </button>
-                             ) : (
+                <div className="fade-in max-w-4xl mx-auto">
+                     <div className="flex justify-between items-center mb-6">
+                         <button onClick={() => handleViewChange('list')} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg border border-gray-700 text-sm">
+                             <ChevronLeft className="w-4 h-4" /> Volver
+                         </button>
+                         <div className="flex items-center gap-3">
+                             {docsStatus.reglamento === 'completed' && (
                                 <span className="px-3 py-1 rounded text-xs uppercase font-bold tracking-wider bg-green-900/20 text-green-500 border border-green-900/50 flex items-center gap-2">
-                                    <CheckCircle className="w-4 h-4" /> Leído
+                                    <CheckCircle className="w-4 h-4" /> Firmado y Entregado
                                 </span>
                              )}
-                        </div>
+                         </div>
                      </div>
-                     <div className="flex-1 relative w-full h-full bg-gray-800 p-0 overflow-hidden">
-                         <iframe 
-                            src="/docs/Reglamento_Interno.pdf" 
-                            className="w-full h-full border-none block" 
-                            title="Reglamento Interno PDF"
-                         />
+
+                     <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl overflow-hidden p-6 md:p-8 space-y-8">
+                          {/* Title */}
+                          <div className="text-center border-b border-gray-700 pb-6">
+                              <h2 className="text-xl md:text-2xl font-bold text-white uppercase tracking-wide">Comprobante de Entrega</h2>
+                              <h3 className="text-sm md:text-lg text-red-500 font-bold uppercase mt-2">Reglamento Interno de Orden, Higiene y Seguridad</h3>
+                          </div>
+
+                          {/* Content Text */}
+                          <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 text-gray-300 leading-relaxed text-justify text-sm md:text-base">
+                              <p>
+                                  En conformidad a lo dispuesto en el Código del Trabajo y la Ley 16.744, declaro haber recibido gratuitamente de la empresa 
+                                  <strong className="text-white"> SYSEG SUR SPA</strong> (R.U.T. 77.056.732-7), 
+                                  una copia del Reglamento Interno de Orden, Higiene y Seguridad.
+                              </p>
+                              <p className="mt-4">
+                                  Asimismo, declaro haber sido instruido sobre su contenido, las obligaciones y prohibiciones que en él se establecen, 
+                                  y me comprometo a leerlo íntegramente y a dar estricto cumplimiento a sus disposiciones.
+                              </p>
+                          </div>
+
+                          {/* Form Fields */}
+                          <div>
+                              <h3 className="section-title">Datos del Trabajador</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div className="md:col-span-2">
+                                      <label className="form-label">Nombre Completo</label>
+                                      <input type="text" className="form-input" placeholder="Ingrese su nombre completo" disabled={docsStatus.reglamento === 'completed'} />
+                                  </div>
+                                  <div>
+                                      <label className="form-label">R.U.T.</label>
+                                      <input type="text" className="form-input" placeholder="12.345.678-9" disabled={docsStatus.reglamento === 'completed'} />
+                                  </div>
+                                  <div>
+                                      <label className="form-label">Fecha de Recepción</label>
+                                      <input type="date" className="form-input" defaultValue={new Date().toISOString().split('T')[0]} disabled={docsStatus.reglamento === 'completed'} />
+                                  </div>
+                                   <div>
+                                      <label className="form-label">Cargo</label>
+                                      <input type="text" className="form-input" value="Guardia de Seguridad" readOnly />
+                                  </div>
+                                  <div>
+                                       <label className="form-label">Ciudad / Faena</label>
+                                       <input type="text" className="form-input" placeholder="Ej: Talagante" disabled={docsStatus.reglamento === 'completed'} />
+                                  </div>
+                              </div>
+                          </div>
+
+                          {/* Signature Section */}
+                          <div>
+                              <h3 className="section-title">Firma de Recepción</h3>
+                              <div className="bg-gray-200 rounded-lg p-4 text-gray-800 max-w-md mx-auto">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h3 className="font-bold text-gray-900 text-xs uppercase">Firma del Trabajador</h3>
+                                        {docsStatus.reglamento !== 'completed' && (
+                                            <button onClick={clearSignature} className="text-xs text-red-600 hover:text-red-800 font-bold underline">Borrar</button>
+                                        )}
+                                    </div>
+                                    <div className={`bg-white border-2 border-dashed border-gray-400 rounded cursor-crosshair relative h-32 ${docsStatus.reglamento === 'completed' ? 'bg-gray-100 cursor-not-allowed' : ''}`}>
+                                        <canvas 
+                                            ref={canvasRef}
+                                            onMouseDown={startDrawing}
+                                            onMouseMove={draw}
+                                            onMouseUp={stopDrawing}
+                                            onMouseLeave={stopDrawing}
+                                            onTouchStart={startDrawing}
+                                            onTouchMove={draw}
+                                            onTouchEnd={stopDrawing}
+                                            className="w-full h-full touch-none"
+                                        />
+                                        <span className="sign-placeholder absolute bottom-2 left-2 text-[10px] text-gray-400 pointer-events-none">Dibuje su firma aquí</span>
+                                    </div>
+                              </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex justify-end pt-4 border-t border-gray-700">
+                              {docsStatus.reglamento !== 'completed' && (
+                                 <button onClick={finalizeDocument} className="px-6 py-3 rounded-lg bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2 transform active:scale-95 transition-all">
+                                     <CheckCircle className="w-5 h-5" />
+                                     Confirmar Recepción y Firma
+                                 </button>
+                              )}
+                           </div>
+                      </div>
+                 </div>
+            )}
+
+            {/* VISTA 6: PACTO HORAS EXTRAS (FORMULARIO) */}
+            {currentView === 'pactoHoras' && (
+                <div className="fade-in max-w-4xl mx-auto">
+                     <div className="flex justify-between items-center mb-6">
+                         <button onClick={() => handleViewChange('list')} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg border border-gray-700 text-sm">
+                             <ChevronLeft className="w-4 h-4" /> Volver
+                         </button>
+                         <div className="flex items-center gap-3">
+                             {docsStatus.pactoHoras === 'completed' && (
+                                <span className="px-3 py-1 rounded text-xs uppercase font-bold tracking-wider bg-green-900/20 text-green-500 border border-green-900/50 flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4" /> Firmado y Entregado
+                                </span>
+                             )}
+                         </div>
+                     </div>
+
+                     <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl overflow-hidden p-6 md:p-8 space-y-8">
+                          {/* Title */}
+                          <div className="text-center border-b border-gray-700 pb-6">
+                              <h2 className="text-xl md:text-2xl font-bold text-white uppercase tracking-wide">Pacto de Horas Extraordinarias</h2>
+                              <h3 className="text-sm md:text-lg text-blue-500 font-bold uppercase mt-2">Art. 32 Código del Trabajo</h3>
+                          </div>
+
+                          {/* Content Text */}
+                          <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-700/50 text-gray-300 leading-relaxed text-justify text-sm md:text-base space-y-4">
+                              <p>
+                                  En Santiago, a <strong className="text-white">{new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, entre <strong className="text-white">SYSEG SUR SPA</strong>,
+                                  R.U.T. 77.056.732-7, representada por Don <strong>MANUEL EASTON YAÑEZ</strong>, en adelante el "Empleador", y el trabajador individualizado más abajo, se ha convenido el siguiente pacto de horas extraordinarias:
+                              </p>
+                              <ol className="list-decimal pl-5 space-y-2">
+                                  <li>
+                                      El trabajador se compromete a realizar horas extraordinarias cuando las necesidades de funcionamiento de la empresa así lo requieran, y siempre que no sean perjudiciales para su salud.
+                                  </li>
+                                  <li>
+                                      Las horas extraordinarias se pagarán con un recargo del 50% sobre el sueldo convenido para la jornada ordinaria y deberán liquidarse y pagarse conjuntamente con las remuneraciones ordinarias del respectivo período.
+                                  </li>
+                                  <li>
+                                      Este pacto tendrá una vigencia transitoria máxima de tres meses, pudiendo renovarse por acuerdo de las partes.
+                                  </li>
+                              </ol>
+                          </div>
+
+                          {/* Form Fields */}
+                          <div>
+                              <h3 className="section-title">Individualización del Trabajador</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div className="md:col-span-2">
+                                      <label className="form-label">Nombre Completo</label>
+                                      <input type="text" className="form-input" placeholder="Ingrese su nombre completo" disabled={docsStatus.pactoHoras === 'completed'} />
+                                  </div>
+                                  <div>
+                                      <label className="form-label">R.U.T.</label>
+                                      <input type="text" className="form-input" placeholder="12.345.678-9" disabled={docsStatus.pactoHoras === 'completed'} />
+                                  </div>
+                                  <div>
+                                      <label className="form-label">Cargo</label>
+                                      <input type="text" className="form-input" value="Guardia de Seguridad" readOnly />
+                                  </div>
+                              </div>
+                          </div>
+
+                          {/* Signature Section */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                              <div>
+                                  <h3 className="section-title text-center mb-4">Firma Trabajador</h3>
+                                  <div className="bg-gray-200 rounded-lg p-4 text-gray-800">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-xs text-gray-500 font-bold uppercase">Firma Digital</span>
+                                            {docsStatus.pactoHoras !== 'completed' && (
+                                                <button onClick={clearSignature} className="text-xs text-red-600 hover:text-red-800 font-bold underline">Borrar</button>
+                                            )}
+                                        </div>
+                                        <div className={`bg-white border-2 border-dashed border-gray-400 rounded cursor-crosshair relative h-32 ${docsStatus.pactoHoras === 'completed' ? 'bg-gray-100 cursor-not-allowed' : ''}`}>
+                                            <canvas 
+                                                ref={canvasRef}
+                                                onMouseDown={startDrawing}
+                                                onMouseMove={draw}
+                                                onMouseUp={stopDrawing}
+                                                onMouseLeave={stopDrawing}
+                                                onTouchStart={startDrawing}
+                                                onTouchMove={draw}
+                                                onTouchEnd={stopDrawing}
+                                                className="w-full h-full touch-none"
+                                            />
+                                            <span className="sign-placeholder absolute bottom-2 left-2 text-[10px] text-gray-400 pointer-events-none">Dibuje su firma aquí</span>
+                                        </div>
+                                  </div>
+                              </div>
+                              
+                              <div>
+                                  <h3 className="section-title text-center mb-4">Firma Empleador</h3>
+                                  <div className="bg-gray-200 rounded-lg p-4 text-gray-800 opacity-80">
+                                        <div className="h-32 border-2 border-solid border-gray-400 bg-white rounded flex flex-col items-center justify-center">
+                                            <span className="font-script text-2xl text-blue-900 mb-1" style={{ fontFamily: 'cursive' }}>Manuel Easton Y.</span>
+                                            <div className="w-3/4 h-px bg-gray-400 mb-1"></div>
+                                            <span className="text-[10px] font-bold uppercase text-gray-600">p.p. Syseg Sur SpA</span>
+                                        </div>
+                                  </div>
+                              </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex justify-end pt-4 border-t border-gray-700">
+                             {docsStatus.pactoHoras !== 'completed' && (
+                                <button onClick={finalizeDocument} className="px-6 py-3 rounded-lg bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2 transform active:scale-95 transition-all">
+                                    <CheckCircle className="w-5 h-5" />
+                                    Aceptar Pacto y Firmar
+                                </button>
+                             )}
+                          </div>
                      </div>
                 </div>
             )}
