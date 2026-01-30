@@ -69,7 +69,8 @@ const DashboardGuardia = () => {
   const [showModal, setShowModal] = useState(false);
   const [docsStatus, setDocsStatus] = useState({
     ficha: 'pending',
-    irl: 'pending'
+    irl: 'pending',
+    reglamento: 'pending'
   });
   const [externalHtml, setExternalHtml] = useState(null);
   const [isLoadingExternal, setIsLoadingExternal] = useState(false);
@@ -483,7 +484,11 @@ const DashboardGuardia = () => {
                 {currentView === 'list' ? (
                     <><span className="text-red-600">Sistema</span> / Documentación</>
                 ) : (
-                    <><span className="text-red-600">Documentación</span> / {currentView === 'ficha' ? 'Ficha de Postulación' : 'Acta IRL / ODI'}</>
+                    <><span className="text-red-600">Documentación</span> / {
+                        currentView === 'ficha' ? 'Ficha de Postulación' : 
+                        currentView === 'irl' ? 'Acta IRL / ODI' : 
+                        'Reglamento Interno'
+                    }</>
                 )}
             </h2>
             <div className="flex items-center gap-3 pl-6 border-l border-gray-800 h-10">
@@ -498,7 +503,7 @@ const DashboardGuardia = () => {
         </header>
 
         {/* CONTENIDO DINÁMICO */}
-        <div ref={mainScrollAreaRef} className={`flex-1 relative ${currentView === 'irl-external' ? 'p-0 overflow-hidden' : 'overflow-y-auto p-4 sm:p-8'}`}>
+        <div ref={mainScrollAreaRef} className={`flex-1 relative ${(currentView === 'irl-external' || currentView === 'reglamento') ? 'p-0 overflow-hidden' : 'overflow-y-auto p-4 sm:p-8'}`}>
             
             {/* VISTA 1: LISTA */}
             {currentView === 'list' && (
@@ -534,6 +539,17 @@ const DashboardGuardia = () => {
                                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                                 </div>
                              )}
+                        </div>
+
+                        {/* Reglamento Interno Card */}
+                        <div onClick={() => handleViewChange('reglamento')} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:bg-gray-750 hover:border-blue-500/50 cursor-pointer transition-all group relative overflow-hidden shadow-lg">
+                             <div className="relative z-10">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-4 border ${docsStatus.reglamento === 'completed' ? 'bg-green-900/30 text-green-400 border-green-900/50' : 'bg-yellow-900/30 text-yellow-500 border-yellow-900/50'}`}>
+                                    {docsStatus.reglamento === 'completed' ? 'Completado' : 'Pendiente'}
+                                </span>
+                                <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Reglamento Interno</h4>
+                                <p className="text-gray-400 text-xs mt-2 leading-relaxed">Reglamento Interno de Orden, Higiene y Seguridad (RIOHS).</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -630,6 +646,42 @@ const DashboardGuardia = () => {
                             className="w-full h-full border-none block" 
                             title="Documento IRL Externo"
                             sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+                         />
+                     </div>
+                </div>
+            )}
+
+            {/* VISTA 5: REGLAMENTO INTERNO */}
+            {currentView === 'reglamento' && (
+                <div className="fade-in w-full h-full flex flex-col bg-gray-900">
+                     <div className="sticky top-0 z-40 bg-gray-900 border-b border-gray-800 p-4 flex justify-between items-center shrink-0">
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => handleViewChange('list')} className="flex items-center text-gray-400 hover:text-white transition-colors text-sm font-medium">
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Volver
+                            </button>
+                            <h3 className="text-white font-bold text-lg hidden sm:block">Reglamento Interno</h3>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                             {docsStatus.reglamento !== 'completed' ? (
+                                <button onClick={finalizeDocument} className="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold text-xs sm:text-sm shadow-lg hover:bg-blue-700 flex items-center gap-2 transform active:scale-95 transition-all">
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Confirmar Lectura</span>
+                                    <span className="sm:hidden">Confirmar</span>
+                                </button>
+                             ) : (
+                                <span className="px-3 py-1 rounded text-xs uppercase font-bold tracking-wider bg-green-900/20 text-green-500 border border-green-900/50 flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4" /> Leído
+                                </span>
+                             )}
+                        </div>
+                     </div>
+                     <div className="flex-1 relative w-full h-full bg-gray-800 p-0 overflow-hidden">
+                         <iframe 
+                            src="/docs/Reglamento_Interno.pdf" 
+                            className="w-full h-full border-none block" 
+                            title="Reglamento Interno PDF"
                          />
                      </div>
                 </div>
