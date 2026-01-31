@@ -673,6 +673,26 @@ const DashboardGuardia = () => {
                 </div>
             )}
 
+            {/* VISTA: DECÁLOGO (LECTURA PDF) */}
+            {currentView === 'decalogo' && (
+                <div className="fade-in w-full h-full flex flex-col bg-gray-900">
+                     <div className="sticky top-0 z-40 bg-gray-900 border-b border-gray-800 p-4 flex justify-between items-center shrink-0">
+                        <button onClick={() => setCurrentView('list')} className="flex items-center text-gray-400 hover:text-white transition-colors text-sm font-medium">
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Volver al Dashboard
+                        </button>
+                        <span className="text-gray-500 text-xs uppercase font-bold">Documento de Lectura</span>
+                     </div>
+                     <div className="flex-1 relative w-full h-full bg-gray-900 p-0 overflow-hidden">
+                         <iframe 
+                            src="/docs/Decalogo_Buenos_Tratos.pdf" 
+                            className="w-full h-full border-none block" 
+                            title="Decálogo de Buenos Tratos"
+                         />
+                     </div>
+                </div>
+            )}
+
             {/* VISTA 5: REGLAMENTO INTERNO (FORMULARIO) */}
             {currentView === 'reglamento' && (
                 <div className="fade-in max-w-4xl mx-auto">
@@ -1015,6 +1035,26 @@ const DashboardGuardia = () => {
                                 </button>
                              )}
                           </div>
+                     </div>
+                </div>
+            )}
+
+            {/* VISTA 8: DECÁLOGO (PDF LECTURA) */}
+            {currentView === 'decalogo' && (
+                <div className="fade-in w-full h-full flex flex-col bg-gray-900">
+                     <div className="sticky top-0 z-40 bg-gray-900 border-b border-gray-800 p-4 flex justify-between items-center shrink-0">
+                        <button onClick={() => setCurrentView('list')} className="flex items-center text-gray-400 hover:text-white transition-colors text-sm font-medium">
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Volver al Dashboard
+                        </button>
+                        <span className="text-gray-500 text-xs uppercase font-bold">Documento de Lectura</span>
+                     </div>
+                     <div className="flex-1 relative w-full h-full bg-gray-900 p-0 overflow-hidden">
+                         <iframe 
+                            src="/docs/Decalogo_Buenos_Tratos.pdf" 
+                            className="w-full h-full border-none block" 
+                            title="Decálogo de Buenos Tratos"
+                         />
                      </div>
                 </div>
             )}
