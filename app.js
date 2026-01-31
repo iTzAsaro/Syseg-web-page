@@ -28,6 +28,7 @@ require('./routes/productoRoutes')(app);
 require('./routes/movimientoInventarioRoutes')(app);
 require('./routes/reporteRoutes')(app);
 require('./routes/categoriaRoutes')(app);
+require('./routes/entregaEppRoutes')(app);
 
 // Ruta de vida del servidor
 app.get('/', (req, res) => {

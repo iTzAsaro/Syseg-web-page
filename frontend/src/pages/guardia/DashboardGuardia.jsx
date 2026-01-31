@@ -71,8 +71,37 @@ const DashboardGuardia = () => {
     ficha: 'pending',
     irl: 'pending',
     reglamento: 'pending',
-    pactoHoras: 'pending'
+    pactoHoras: 'pending',
+    actaDeberes: 'pending',
+    entregaEpp: 'pending'
   });
+  
+  // Estado para formulario EPP
+  const [eppForm, setEppForm] = useState({
+    nombre: '',
+    rut: '',
+    cargo: 'Guardia de Seguridad',
+    area: '',
+    fecha: new Date().toISOString().split('T')[0]
+  });
+  
+  const [eppItems, setEppItems] = useState([
+    { name: 'Zapatos de seguridad', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Zapatos de vestir', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Pantalón largo', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Polera', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Camisa o blusa', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Geólogo', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Chaleco anti corte', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Chaqueta', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Corta viento', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Chaleco', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Polar', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Casco', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Lentes U.V.', cantidad: '', talla: '', observaciones: '' },
+    { name: 'Bloqueador solar', cantidad: '', talla: '', observaciones: '' }
+  ]);
+
   const [externalHtml, setExternalHtml] = useState(null);
   const [isLoadingExternal, setIsLoadingExternal] = useState(false);
   
@@ -89,7 +118,7 @@ const DashboardGuardia = () => {
 
   // --- Efectos ---
   useEffect(() => {
-    if ((currentView === 'ficha' || currentView === 'irl' || currentView === 'reglamento' || currentView === 'pactoHoras') && canvasRef.current) {
+    if ((currentView === 'ficha' || currentView === 'irl' || currentView === 'reglamento' || currentView === 'pactoHoras' || currentView === 'actaDeberes' || currentView === 'entregaEpp') && canvasRef.current) {
       initCanvas();
     }
   }, [currentView, irlPage, viewMode]);
@@ -224,6 +253,81 @@ const DashboardGuardia = () => {
   const closeModal = () => {
     setShowModal(false);
     handleViewChange('list');
+  };
+
+  // --- Lógica EPP ---
+  const handleEppChange = (e) => {
+    const { name, value } = e.target;
+    setEppForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleItemChange = (index, field, value) => {
+    const newItems = [...eppItems];
+    newItems[index][field] = value;
+    setEppItems(newItems);
+  };
+
+  const submitEpp = async () => {
+    try {
+        if (docsStatus.entregaEpp === 'completed') return;
+
+        // Validaciones básicas
+        if (!eppForm.nombre || !eppForm.rut) {
+            alert('Nombre y RUT son obligatorios.');
+            return;
+        }
+
+        // Obtener firma
+        const canvas = canvasRef.current;
+        const isCanvasEmpty = !isDrawing.current && canvas.toDataURL() === document.createElement('canvas').toDataURL();
+        // Nota: la validación de canvas vacío es compleja, asumimos que si no ha dibujado nada (isDrawing flag) podría estar vacío, pero mejor confiar en visual.
+        // Una validación simple es verificar si hay datos de píxeles, pero por ahora confiaremos en que el usuario firme.
+        const signatureData = canvas.toDataURL('image/png');
+        
+        // Filtrar items con cantidad > 0
+        const itemsToSend = eppItems.filter(item => item.cantidad && parseInt(item.cantidad) > 0).map(item => ({
+            nombre_producto: item.name,
+            cantidad: parseInt(item.cantidad),
+            talla: item.talla,
+            tipo: 'Ropa/EPP', 
+            observaciones: item.observaciones
+        }));
+
+        if (itemsToSend.length === 0) {
+            alert('Debe registrar al menos un ítem entregado.');
+            return;
+        }
+
+        const payload = {
+            nombre_receptor: eppForm.nombre,
+            rut_receptor: eppForm.rut,
+            cargo_receptor: eppForm.cargo,
+            fecha_entrega: eppForm.fecha,
+            observaciones: `Área: ${eppForm.area}`,
+            firma_receptor: signatureData,
+            items: itemsToSend
+        };
+
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/entrega-epp', { // Ajustar URL base si es necesario
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al guardar la entrega');
+        }
+
+        finalizeDocument();
+    } catch (error) {
+        console.error('Error submitting EPP:', error);
+        alert('Hubo un error al guardar el documento: ' + error.message);
+    }
   };
 
   // --- Renderizado de Páginas IRL ---
@@ -500,6 +604,9 @@ const DashboardGuardia = () => {
                     <><span className="text-red-600">Documentación</span> / {
                         currentView === 'ficha' ? 'Ficha de Postulación' : 
                         currentView === 'irl' ? 'Acta IRL / ODI' : 
+                        currentView === 'entregaEpp' ? 'Entrega de EPP' :
+                        currentView === 'actaDeberes' ? 'Acta Deberes' :
+                        currentView === 'pactoHoras' ? 'Pacto Horas Extras' :
                         'Reglamento Interno'
                     }</>
                 )}
@@ -575,6 +682,20 @@ const DashboardGuardia = () => {
                             </div>
                         </div>
 
+                        {/* Entrega EPP Card */}
+                        <div onClick={() => handleViewChange('entregaEpp')} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:bg-gray-750 hover:border-green-500/50 cursor-pointer transition-all group relative overflow-hidden shadow-lg">
+                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <Shield className="w-24 h-24 text-green-500 transform rotate-12" />
+                            </div>
+                             <div className="relative z-10">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-4 border ${docsStatus.entregaEpp === 'completed' ? 'bg-green-900/30 text-green-400 border-green-900/50' : 'bg-yellow-900/30 text-yellow-500 border-yellow-900/50'}`}>
+                                    {docsStatus.entregaEpp === 'completed' ? 'Completado' : 'Pendiente'}
+                                </span>
+                                <h4 className="text-lg font-bold text-white group-hover:text-green-400 transition-colors">Entrega de EPP</h4>
+                                <p className="text-gray-400 text-xs mt-2 leading-relaxed">Registro de entrega de ropa corporativa y elementos de protección.</p>
+                            </div>
+                        </div>
+
                         {/* Acta Deberes Card */}
                         <div onClick={() => handleViewChange('actaDeberes')} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:bg-gray-750 hover:border-blue-500/50 cursor-pointer transition-all group relative overflow-hidden shadow-lg">
                              <div className="relative z-10">
@@ -583,6 +704,17 @@ const DashboardGuardia = () => {
                                 </span>
                                 <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Acta Deberes y Obligaciones</h4>
                                 <p className="text-gray-400 text-xs mt-2 leading-relaxed">Notificación oficial de deberes y obligaciones del guardia.</p>
+                            </div>
+                        </div>
+
+                        {/* Decálogo Card */}
+                        <div onClick={() => handleViewChange('decalogo')} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:bg-gray-750 hover:border-purple-500/50 cursor-pointer transition-all group relative overflow-hidden shadow-lg">
+                             <div className="relative z-10">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-4 border bg-purple-900/30 text-purple-400 border-purple-900/50">
+                                    Lectura Obligatoria
+                                </span>
+                                <h4 className="text-lg font-bold text-white group-hover:text-purple-400 transition-colors">Decálogo de Buenos Tratos</h4>
+                                <p className="text-gray-400 text-xs mt-2 leading-relaxed">Normas básicas de convivencia y buen trato en el ambiente laboral.</p>
                             </div>
                         </div>
                     </div>
@@ -920,6 +1052,187 @@ const DashboardGuardia = () => {
                              )}
                           </div>
                      </div>
+                </div>
+            )}
+
+            {/* VISTA: ENTREGA EPP (FORMULARIO) */}
+            {currentView === 'entregaEpp' && (
+                <div className="fade-in max-w-4xl mx-auto">
+                     <div className="flex justify-between items-center mb-6">
+                         <button onClick={() => handleViewChange('list')} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg border border-gray-700 text-sm">
+                             <ChevronLeft className="w-4 h-4" /> Volver
+                         </button>
+                         <div className="flex items-center gap-3">
+                             {docsStatus.entregaEpp === 'completed' && (
+                                <>
+                                    <button onClick={generateEppPdf} className="px-3 py-1 rounded text-xs font-bold tracking-wider bg-blue-900/20 text-blue-400 border border-blue-900/50 flex items-center gap-2 hover:bg-blue-900/40 transition-colors">
+                                        <Download className="w-4 h-4" /> Descargar PDF
+                                    </button>
+                                    <span className="px-3 py-1 rounded text-xs uppercase font-bold tracking-wider bg-green-900/20 text-green-500 border border-green-900/50 flex items-center gap-2">
+                                        <CheckCircle className="w-4 h-4" /> Firmado y Entregado
+                                    </span>
+                                </>
+                             )}
+                         </div>
+                     </div>
+
+                     <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl overflow-hidden relative">
+                        {/* HEADER DEL DOCUMENTO */}
+                        <div className="bg-gray-900 border-b border-gray-700 p-6 flex justify-between items-start">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-white p-2 rounded w-12 h-12 flex items-center justify-center">
+                                    <span className="text-red-600 font-black text-xl">S</span>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-white tracking-wide">ENTREGA DE EPP Y ROPA CORPORATIVA</h1>
+                                    <p className="text-xs text-gray-400">GUARDIAS Y SUPERVISORES DE SEGURIDAD - SYSEG SUR SPA</p>
+                                </div>
+                            </div>
+                            <div className="text-right hidden sm:block">
+                                <p className="text-[10px] text-gray-500 font-mono">CÓDIGO: PPRRSRS</p>
+                                <p className="text-[10px] text-gray-500 font-mono">VERSIÓN: 01</p>
+                            </div>
+                        </div>
+
+                        {/* FORMULARIO EPP */}
+                        <div className="p-6 sm:p-8 space-y-6 relative z-10">
+                            {/* Datos Trabajador */}
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                <div className="md:col-span-8">
+                                    <label className="form-label">Nombre Trabajador</label>
+                                    <input type="text" className="form-input" name="nombre" value={eppForm.nombre} onChange={handleEppChange} disabled={docsStatus.entregaEpp === 'completed'} />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <label className="form-label">RUT</label>
+                                    <input type="text" className="form-input" name="rut" value={eppForm.rut} onChange={handleEppChange} disabled={docsStatus.entregaEpp === 'completed'} />
+                                </div>
+                                <div className="md:col-span-6">
+                                    <label className="form-label">Cargo</label>
+                                    <input type="text" className="form-input" name="cargo" value={eppForm.cargo} onChange={handleEppChange} disabled={docsStatus.entregaEpp === 'completed'} />
+                                </div>
+                                <div className="md:col-span-6">
+                                    <label className="form-label">Área</label>
+                                    <input type="text" className="form-input" name="area" value={eppForm.area} onChange={handleEppChange} disabled={docsStatus.entregaEpp === 'completed'} />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <label className="form-label">Fecha</label>
+                                    <input type="date" className="form-input" name="fecha" value={eppForm.fecha} onChange={handleEppChange} disabled={docsStatus.entregaEpp === 'completed'} />
+                                </div>
+                            </div>
+
+                            {/* Tabla EPP */}
+                            <div>
+                                <h3 className="section-title">Detalle de Entrega</h3>
+                                <div className="overflow-x-auto rounded border border-gray-700">
+                                    <table className="w-full text-left text-sm text-gray-400">
+                                        <thead className="bg-gray-900 text-xs uppercase font-bold text-gray-300">
+                                            <tr>
+                                                <th className="px-4 py-3 border-b border-gray-700 w-1/3">EPP - Ropa Corporativa</th>
+                                                <th className="px-4 py-3 border-b border-gray-700 w-24 text-center">Cantidad</th>
+                                                <th className="px-4 py-3 border-b border-gray-700 w-24 text-center">Talla</th>
+                                                <th className="px-4 py-3 border-b border-gray-700">Observaciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-700/50">
+                                            {eppItems.map((item, index) => (
+                                                <tr key={index} className="hover:bg-gray-700/30">
+                                                    <td className="px-4 py-2 text-gray-200">{item.name}</td>
+                                                    <td className="px-2 py-2">
+                                                        <input 
+                                                            type="number" 
+                                                            className="form-input py-1 text-center bg-gray-900/50" 
+                                                            value={item.cantidad} 
+                                                            onChange={(e) => handleItemChange(index, 'cantidad', e.target.value)}
+                                                            disabled={docsStatus.entregaEpp === 'completed'}
+                                                        />
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <input 
+                                                            type="text" 
+                                                            className="form-input py-1 text-center bg-gray-900/50" 
+                                                            value={item.talla} 
+                                                            onChange={(e) => handleItemChange(index, 'talla', e.target.value)}
+                                                            disabled={docsStatus.entregaEpp === 'completed'}
+                                                        />
+                                                    </td>
+                                                    <td className="px-2 py-2">
+                                                        <input 
+                                                            type="text" 
+                                                            className="form-input py-1 bg-gray-900/50" 
+                                                            value={item.observaciones} 
+                                                            onChange={(e) => handleItemChange(index, 'observaciones', e.target.value)}
+                                                            disabled={docsStatus.entregaEpp === 'completed'}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Texto Legal */}
+                            <div className="bg-gray-900/50 p-4 rounded border border-gray-700 text-xs text-gray-400 space-y-2">
+                                 <p className="flex gap-2">
+                                    <span className="text-green-500 font-bold">➤</span>
+                                    El trabajador se compromete a mantener los elementos de protección personal en buen estado, y además de solicitar el cambio de este cuando se encuentre en mal estado.
+                                 </p>
+                                 <p className="flex gap-2">
+                                    <span className="text-green-500 font-bold">➤</span>
+                                    <span className="block">
+                                        <strong className="text-gray-300">Decreto Supremo 594, Artículo 53°:</strong> El empleador deberá proporcionar a sus trabajadores, libres de costo, los elementos de protección personal adecuados al riesgo a cubrir y el adiestramiento necesario para su correcto empleo, debiendo, además, mantenerlos en perfecto estado de funcionamiento. Por su parte, el trabajador deberá usarlos en forma permanente mientras se encuentre expuesto al riesgo.
+                                    </span>
+                                 </p>
+                                 <p className="flex gap-2">
+                                    <span className="text-green-500 font-bold">➤</span>
+                                    <span className="block">
+                                        <strong className="text-gray-300">Decreto Supremo 594, Artículo 54°:</strong> Los elementos de protección personal usados en los lugares de trabajo, sean de procedencia nacional o extranjera, deberán cumplir con las normas y exigencias de calidad que rijan a tales artículos según su naturaleza.
+                                    </span>
+                                 </p>
+                            </div>
+
+                             {/* Firmas */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-gray-200 rounded-lg p-4 text-gray-800">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h3 className="font-bold text-gray-900 text-xs uppercase">Firma del Trabajador</h3>
+                                        {docsStatus.entregaEpp !== 'completed' && (
+                                            <button onClick={clearSignature} className="text-[10px] text-red-600 hover:text-red-800 font-bold underline">Borrar</button>
+                                        )}
+                                    </div>
+                                    <div className={`bg-white border-2 border-dashed border-gray-400 rounded cursor-crosshair relative h-32 ${docsStatus.entregaEpp === 'completed' ? 'bg-gray-100 cursor-not-allowed' : ''}`}>
+                                        <canvas 
+                                            ref={canvasRef}
+                                            onMouseDown={startDrawing}
+                                            onMouseMove={draw}
+                                            onMouseUp={stopDrawing}
+                                            onMouseLeave={stopDrawing}
+                                            onTouchStart={startDrawing}
+                                            onTouchMove={draw}
+                                            onTouchEnd={stopDrawing}
+                                            className="w-full h-full touch-none"
+                                        />
+                                        <span className="sign-placeholder absolute bottom-2 left-2 text-[10px] text-gray-400 pointer-events-none">Dibuje su firma aquí</span>
+                                    </div>
+                                </div>
+                                
+                                 <div className="bg-gray-900/50 border border-gray-600 rounded-lg p-4 flex flex-col justify-end items-center opacity-70">
+                                     <div className="h-12 border-b border-gray-500 w-3/4 mb-2"></div>
+                                     <p className="text-[10px] text-center text-gray-400 font-bold uppercase">Nombre y Firma Entregador</p>
+                                 </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex justify-end pt-4 border-t border-gray-800">
+                                {docsStatus.entregaEpp !== 'completed' && (
+                                    <button onClick={submitEpp} className="px-6 py-2 rounded-lg bg-green-600 text-white font-bold text-sm shadow-lg hover:bg-green-700 flex items-center gap-2">
+                                        <CheckCircle className="w-5 h-5" />
+                                        Finalizar Entrega
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

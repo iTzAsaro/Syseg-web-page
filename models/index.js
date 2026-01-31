@@ -22,6 +22,8 @@ const Bitacora = require('./Bitacora');
 const Asignacion = require('./Asignacion');
 const Blacklist = require('./Blacklist');
 const Auditoria = require('./Auditoria');
+const EntregaEpp = require('./EntregaEpp');
+const DetalleEntregaEpp = require('./DetalleEntregaEpp');
 
 // Asociaciones
 
@@ -105,6 +107,13 @@ Asignacion.belongsTo(Local, { foreignKey: 'local_id' });
 Usuario.hasMany(Auditoria, { foreignKey: 'usuario_id' });
 Auditoria.belongsTo(Usuario, { foreignKey: 'usuario_id' });
 
+// Entrega EPP Relaciones
+EntregaEpp.belongsTo(Usuario, { as: 'receptor', foreignKey: 'usuario_id' });
+EntregaEpp.belongsTo(Usuario, { as: 'responsable', foreignKey: 'responsable_id' });
+EntregaEpp.hasMany(DetalleEntregaEpp, { foreignKey: 'entrega_id' });
+DetalleEntregaEpp.belongsTo(EntregaEpp, { foreignKey: 'entrega_id' });
+DetalleEntregaEpp.belongsTo(Producto, { foreignKey: 'producto_id' });
+
 module.exports = {
     sequelize,
     Rol,
@@ -128,5 +137,7 @@ module.exports = {
     Bitacora,
     Asignacion,
     Blacklist,
-    Auditoria
+    Auditoria,
+    EntregaEpp,
+    DetalleEntregaEpp
 };
