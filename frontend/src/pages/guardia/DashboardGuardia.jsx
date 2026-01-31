@@ -94,6 +94,18 @@ const DashboardGuardia = () => {
     }
   }, [currentView, irlPage, viewMode]);
 
+  // Listener para mensajes desde el iframe (2.documento.html)
+  useEffect(() => {
+    const handleIframeMessage = (event) => {
+      if (event.data === 'close-irl') {
+        handleViewChange('list');
+      }
+    };
+
+    window.addEventListener('message', handleIframeMessage);
+    return () => window.removeEventListener('message', handleIframeMessage);
+  }, []);
+
   // --- Funciones de Navegación ---
   const handleViewChange = (view) => {
     setCurrentView(view);
@@ -503,7 +515,7 @@ const DashboardGuardia = () => {
             </div>
         </header>
 
-        <div ref={mainScrollAreaRef} className={`flex-1 relative ${currentView === 'irl-external' ? 'p-0 overflow-hidden' : 'overflow-y-auto p-4 sm:p-8'}`}>
+        <div ref={mainScrollAreaRef} className={`flex-1 relative ${(currentView === 'irl-external' || currentView === 'decalogo') ? 'p-0 overflow-hidden' : 'overflow-y-auto p-4 sm:p-8'}`}>
             
             {/* VISTA 1: LISTA */}
             {currentView === 'list' && (
@@ -609,13 +621,20 @@ const DashboardGuardia = () => {
             {/* VISTA 3: IRL */}
             {currentView === 'irl' && (
                 <div className="fade-in max-w-5xl mx-auto">
+                    {/* Header "Volver al Dashboard" */}
+                    <div className="sticky top-0 z-50 bg-gray-900 border-b border-gray-800 p-4 -mx-4 sm:-mx-8 -mt-4 sm:-mt-8 mb-6 flex justify-between items-center shadow-md">
+                        <button onClick={() => handleViewChange('list')} className="flex items-center text-gray-400 hover:text-white transition-colors text-sm font-medium">
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Volver al Dashboard
+                        </button>
+                        <span className="text-gray-500 text-xs uppercase font-bold">Vista Documento Completo</span>
+                    </div>
+
                     {/* Toolbar */}
-                    <div className="sticky top-0 z-40 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 pb-4 mb-6 pt-2">
+                    <div className="sticky top-[73px] z-40 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 pb-4 mb-6 pt-2">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <button onClick={() => handleViewChange('list')} className="flex items-center text-gray-400 hover:text-white transition-colors text-sm font-medium self-start md:self-auto">
-                                <ChevronLeft className="h-4 w-4 mr-1" />
-                                Volver
-                            </button>
+                            {/* Espaciador para equilibrar el layout (reemplaza botón Volver) */}
+                            <div className="hidden md:block w-32"></div>
                             
                             {/* Paginación */}
                             {viewMode === 'paginated' && (
@@ -655,13 +674,7 @@ const DashboardGuardia = () => {
             {/* VISTA 4: IRL EXTERNA */}
             {currentView === 'irl-external' && (
                 <div className="fade-in w-full h-full flex flex-col bg-gray-900">
-                     <div className="sticky top-0 z-40 bg-gray-900 border-b border-gray-800 p-4 flex justify-between items-center shrink-0">
-                        <button onClick={() => setCurrentView('list')} className="flex items-center text-gray-400 hover:text-white transition-colors text-sm font-medium">
-                            <ChevronLeft className="h-4 w-4 mr-1" />
-                            Volver al Dashboard
-                        </button>
-                        <span className="text-gray-500 text-xs uppercase font-bold">Vista Documento Completo</span>
-                     </div>
+
                      <div className="flex-1 relative w-full h-full bg-gray-900 p-0 overflow-hidden">
                          <iframe 
                             srcDoc={externalHtml} 
