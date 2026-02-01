@@ -8,6 +8,94 @@ import guardiaService from '../../services/guardiaService';
 import RequirePermission from '../../components/RequirePermission';
 import Swal from 'sweetalert2';
 
+// Helper para formatear RUT
+const formatRut = (rut) => {
+    if (!rut) return '';
+    const cleanRut = rut.replace(/[^0-9kK]/g, '');
+    if (cleanRut.length <= 1) return cleanRut;
+    const body = cleanRut.slice(0, -1);
+    const dv = cleanRut.slice(-1).toUpperCase();
+    return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`;
+};
+
+// Helper para validar RUT
+const validateRut = (rut) => {
+    if (!rut) return false;
+    const cleanRut = rut.replace(/[^0-9kK]/g, '');
+    if (cleanRut.length < 2) return false;
+    const body = cleanRut.slice(0, -1);
+    const dv = cleanRut.slice(-1).toUpperCase();
+    let sum = 0;
+    let multiplier = 2;
+    for (let i = body.length - 1; i >= 0; i--) {
+        sum += parseInt(body[i]) * multiplier;
+        multiplier = multiplier === 7 ? 2 : multiplier + 1;
+    }
+    const res = 11 - (sum % 11);
+    const calculatedDv = res === 11 ? '0' : res === 10 ? 'K' : res.toString();
+    return dv === calculatedDv;
+};
+
+// Helper para formatear fecha input (DD/MM/YYYY)
+const formatDateInput = (value) => {
+    const v = value.replace(/\D/g, '').slice(0, 8);
+    if (v.length >= 5) {
+        return `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}`;
+    } else if (v.length >= 3) {
+        return `${v.slice(0, 2)}/${v.slice(2)}`;
+    }
+    return v;
+};
+
+// Helper para convertir ISO (YYYY-MM-DD) a Display (DD/MM/YYYY)
+const isoToDisplayDate = (isoDate) => {
+    if (!isoDate) return '';
+    const [year, month, day] = isoDate.split('-');
+    return `${day}/${month}/${year}`;
+};
+
+// Helper para convertir Display (DD/MM/YYYY) a ISO (YYYY-MM-DD)
+const displayToIsoDate = (displayDate) => {
+    if (!displayDate || displayDate.length !== 10) return null;
+    const [day, month, year] = displayDate.split('/');
+    return `${year}-${month}-${day}`;
+};
+
+// Helper para formatear teléfono (+56 9 XXXX XXXX)
+const formatPhone = (value) => {
+    // 1. Limpiar todo lo que no sea número
+    const clean = value.replace(/\D/g, '');
+    
+    // 2. Si está vacío, retornar vacío
+    if (clean.length === 0) return '';
+
+    // 3. Normalizar inicio (si empieza con 56, lo quitamos para procesar)
+    let number = clean;
+    if (number.startsWith('56')) {
+        number = number.slice(2);
+    }
+    
+    // 4. Limitar largo máximo (9 dígitos: 9 + 8 dígitos número)
+    if (number.length > 9) {
+        number = number.slice(0, 9);
+    }
+
+    // 5. Construir formato +56 X XXXX XXXX
+    let formatted = '+56';
+    
+    if (number.length > 0) {
+        formatted += ' ' + number.slice(0, 1); // Primer dígito (ej: 9)
+    }
+    if (number.length > 1) {
+        formatted += ' ' + number.slice(1, 5); // Siguientes 4
+    }
+    if (number.length > 5) {
+        formatted += ' ' + number.slice(5); // Resto
+    }
+    
+    return formatted;
+};
+
 const Guardias = () => {
     const [guards, setGuards] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -15,6 +103,11 @@ const Guardias = () => {
     const [activeTab, setActiveTab] = useState('personal');
     const [editingId, setEditingId] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
+    const [rutError, setRutError] = useState('');
+    const [nacimientoError, setNacimientoError] = useState('');
+    
+    // Calculate max date (18 years ago) for validation
+    const today = new Date();
     
     // Estado del formulario
     const initialFormState = {
@@ -35,8 +128,8 @@ const Guardias = () => {
         activo_app: true,
         password: '',
         tiene_cuenta_rut: true,
-        banco_nombre: '',
-        banco_tipo_cuenta: '',
+        banco_nombre: 'BancoEstado',
+        banco_tipo_cuenta: 'Cuenta Vista',
         banco_numero_cuenta: ''
     };
     
@@ -58,19 +151,24 @@ const Guardias = () => {
     };
 
     const handleOpenModal = (guard = null) => {
+        setRutError(''); // Limpiar error al abrir modal
+        setNacimientoError('');
         if (guard) {
             setEditingId(guard.id);
+            const isCuentaRut = guard.banco_nombre === 'BancoEstado' && guard.banco_tipo_cuenta === 'Cuenta Vista';
+            
             setFormData({
                 ...initialFormState,
                 ...guard,
                 // Mapeo de campos si es necesario (ej. si el backend devuelve null)
-                nacimiento: guard.nacimiento || '',
+                nacimiento: isoToDisplayDate(guard.nacimiento) || '',
                 email: guard.email || '',
                 nombre_emergencia: guard.nombre_emergencia || '',
                 fono_emergencia: guard.fono_emergencia || '',
                 celular: guard.celular || '',
-                banco_nombre: guard.banco_nombre || '',
-                banco_tipo_cuenta: guard.banco_tipo_cuenta || '',
+                tiene_cuenta_rut: isCuentaRut,
+                banco_nombre: guard.banco_nombre || (isCuentaRut ? 'BancoEstado' : ''),
+                banco_tipo_cuenta: guard.banco_tipo_cuenta || (isCuentaRut ? 'Cuenta Vista' : ''),
                 banco_numero_cuenta: guard.banco_numero_cuenta || '',
                 comuna: guard.comuna || 'Santiago',
                 talla_camisa: guard.talla_camisa || 'M',
@@ -95,23 +193,132 @@ const Guardias = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+        
+        let newValue = type === 'checkbox' ? checked : value;
+        let extraUpdates = {};
+        
+        if (name === 'rut') {
+            newValue = formatRut(value);
+            // Validar RUT
+            if (newValue.length > 0) {
+                if (!validateRut(newValue)) {
+                    setRutError('RUT inválido');
+                } else {
+                    setRutError('');
+                }
+            } else {
+                setRutError('');
+            }
+
+            // Actualizar número de cuenta si es Cuenta RUT
+            if (formData.tiene_cuenta_rut) {
+                extraUpdates.banco_numero_cuenta = newValue.replace(/\./g, '').split('-')[0];
+            }
+        }
+
+        if (name === 'celular' || name === 'fono_emergencia') {
+            newValue = formatPhone(value);
+        }
+
+        if (name === 'nacimiento') {
+            newValue = formatDateInput(value);
+            
+            if (newValue.length === 10) { // DD/MM/YYYY
+                const [day, month, year] = newValue.split('/').map(Number);
+                const date = new Date(year, month - 1, day);
+                const today = new Date();
+                
+                // Validar fecha real (ej: 31/02 no existe)
+                if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+                     setNacimientoError('Fecha inválida');
+                } else {
+                    let age = today.getFullYear() - date.getFullYear();
+                    const m = today.getMonth() - date.getMonth();
+                    if (m < 0 || (m === 0 && today.getDate() < date.getDate())) {
+                        age--;
+                    }
+                    
+                    if (age < 18) {
+                        setNacimientoError('Debe ser mayor de 18 años');
+                    } else {
+                        setNacimientoError('');
+                    }
+                }
+            } else if (newValue.length > 0) {
+                 // Si está escribiendo pero no ha terminado
+                 setNacimientoError('');
+            } else {
+                setNacimientoError('');
+            }
+        }
+
+        if (name === 'banco_numero_cuenta' || name === 'talla_pantalon' || name === 'talla_zapato') {
+            newValue = value.replace(/\D/g, '');
+            // Limitar tallas a 2 dígitos
+            if (name === 'talla_pantalon' || name === 'talla_zapato') {
+                newValue = newValue.slice(0, 2);
+            }
+        }
+
+        // Lógica para Cuenta RUT
+        if (name === 'tiene_cuenta_rut') {
+            if (newValue) {
+                extraUpdates.banco_nombre = 'BancoEstado';
+                extraUpdates.banco_tipo_cuenta = 'Cuenta Vista';
+                extraUpdates.banco_numero_cuenta = formData.rut ? formData.rut.replace(/\./g, '').split('-')[0] : '';
+            } else {
+                extraUpdates.banco_nombre = '';
+                extraUpdates.banco_tipo_cuenta = '';
+                extraUpdates.banco_numero_cuenta = '';
+            }
+        }
+
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: newValue,
+            ...extraUpdates
         }));
     };
 
     const handleSave = async () => {
+        if (rutError) {
+            Swal.fire({
+                icon: 'error',
+                title: 'RUT Inválido',
+                text: 'Por favor, corrige el RUT antes de guardar.'
+            });
+            return;
+        }
+
+        if (nacimientoError) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Fecha Inválida',
+                text: 'El guardia debe ser mayor de 18 años y la fecha válida.'
+            });
+            return;
+        }
+
+        // Preparar datos para enviar (convertir fecha DD/MM/YYYY a ISO)
+        const dataToSend = {
+            ...formData,
+            nacimiento: displayToIsoDate(formData.nacimiento) || formData.nacimiento
+        };
+
         try {
             if (editingId) {
-                await guardiaService.update(editingId, formData);
+                await guardiaService.update(editingId, dataToSend);
             } else {
-                await guardiaService.create(formData);
+                await guardiaService.create(dataToSend);
             }
             fetchGuards();
             handleCloseModal();
         } catch (error) {
-            alert("Error guardando: " + error.message);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Error al guardar el guardia'
+            });
         }
     };
 
@@ -259,10 +466,10 @@ const Guardias = () => {
                              <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
                                 <div className="flex items-center gap-2 mb-1">
                                     <CreditCard className="w-3.5 h-3.5 text-blue-600" />
-                                    <span className="text-xs font-bold text-blue-800">{guard.banco_nombre || 'Sin Banco'}</span>
+                                    <span className="text-xs font-bold text-blue-800">{guard.banco_nombre || (guard.tiene_cuenta_rut ? 'BancoEstado' : 'Sin Banco')}</span>
                                 </div>
                                 <p className="text-[10px] text-blue-600 pl-5.5">
-                                    {guard.banco_tipo_cuenta || ''} • {guard.banco_numero_cuenta || ''}
+                                    {guard.banco_tipo_cuenta || (guard.tiene_cuenta_rut ? 'Cuenta Vista' : '')} • {guard.banco_numero_cuenta || (guard.tiene_cuenta_rut && guard.rut ? guard.rut.replace(/\./g, '').split('-')[0] : '')}
                                 </p>
                             </div>
                             
@@ -374,19 +581,23 @@ const Guardias = () => {
                                             name="rut"
                                             value={formData.rut}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black" 
+                                            className={`w-full bg-gray-50 border ${rutError ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black`}
                                             placeholder="12.345.678-9"
                                         />
+                                        {rutError && <p className="text-xs text-red-500 mt-1 font-bold">{rutError}</p>}
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Nacimiento</label>
                                         <input 
-                                            type="date" 
+                                            type="text" 
                                             name="nacimiento"
                                             value={formData.nacimiento}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
+                                            placeholder="DD/MM/YYYY"
+                                            maxLength="10"
+                                            className={`w-full bg-gray-50 border ${nacimientoError ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black`}
                                         />
+                                        {nacimientoError && <p className="text-xs text-red-500 mt-1 font-bold">{nacimientoError}</p>}
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -486,25 +697,28 @@ const Guardias = () => {
                                          </div>
                                          <div className="space-y-1 text-center">
                                              <label className="text-[10px] font-bold text-gray-500">PANTALÓN</label>
-                                             <select 
+                                             <input 
+                                                type="text" 
+                                                inputMode="numeric"
                                                 name="talla_pantalon"
                                                 value={formData.talla_pantalon}
                                                 onChange={handleChange}
-                                                className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 text-center text-sm font-bold"
-                                            >
-                                                <option>40</option><option>42</option><option>44</option><option>46</option>
-                                            </select>
+                                                placeholder="Ej. 42"
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 text-center text-sm font-bold outline-none focus:ring-2 focus:ring-black"
+                                            />
                                          </div>
                                          <div className="space-y-1 text-center">
                                              <label className="text-[10px] font-bold text-gray-500">CALZADO</label>
-                                             <select 
+                                             <input 
+                                                type="text" 
+                                                inputMode="numeric"
+                                                maxLength={2}
                                                 name="talla_zapato"
                                                 value={formData.talla_zapato}
                                                 onChange={handleChange}
-                                                className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 text-center text-sm font-bold"
-                                            >
-                                                <option>39</option><option>40</option><option>41</option><option>42</option>
-                                            </select>
+                                                placeholder="Ej. 41"
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 text-center text-sm font-bold outline-none focus:ring-2 focus:ring-black"
+                                            />
                                          </div>
                                     </div>
                                 </div>
@@ -577,13 +791,49 @@ const Guardias = () => {
                                          <span className="text-sm text-gray-700 font-medium">Usar Cuenta RUT (BancoEstado)</span>
                                     </div>
                                     <div className="space-y-1.5">
-                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Otro Banco / Tipo / N°</label>
-                                         <input 
-                                            type="text" 
-                                            disabled={formData.tiene_cuenta_rut}
-                                            className="w-full bg-gray-100 text-gray-400 border border-gray-200 rounded-xl px-4 py-3 text-sm" 
-                                            placeholder="Ej. Santander - Cta Cte - 099..."
-                                        />
+                                         <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-opacity duration-200 ${formData.tiene_cuenta_rut ? 'opacity-50' : 'opacity-100'}`}>
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Banco</label>
+                                                <input 
+                                                    type="text" 
+                                                    name="banco_nombre"
+                                                    value={formData.banco_nombre}
+                                                    onChange={handleChange}
+                                                    disabled={formData.tiene_cuenta_rut}
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed" 
+                                                    placeholder="Ej. Santander"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Tipo de Cuenta</label>
+                                                <select 
+                                                    name="banco_tipo_cuenta"
+                                                    value={formData.banco_tipo_cuenta}
+                                                    onChange={handleChange}
+                                                    disabled={formData.tiene_cuenta_rut}
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                >
+                                                    <option value="">Seleccionar</option>
+                                                    <option value="Cuenta Vista">Cuenta Vista</option>
+                                                    <option value="Cuenta Corriente">Cuenta Corriente</option>
+                                                    <option value="Cuenta Ahorro">Cuenta Ahorro</option>
+                                                    <option value="Chequera Electrónica">Chequera Electrónica</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Número</label>
+                                                <input 
+                                                    type="text" 
+                                                    inputMode="numeric"
+                                                    name="banco_numero_cuenta"
+                                                    value={formData.banco_numero_cuenta}
+                                                    onChange={handleChange}
+                                                    disabled={formData.tiene_cuenta_rut}
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed" 
+                                                    placeholder="N° Cuenta"
+                                                />
+                                            </div>
+                                         </div>
                                     </div>
                                 </div>
                             </div>
