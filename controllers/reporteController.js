@@ -10,8 +10,9 @@ exports.getResumenOperativo = async (req, res) => {
         // 1. Total Artículos
         const totalProductos = await Producto.count();
 
-        // 2. Guardias Activos (Habilitados App)
+        // 2. Guardias Activos (Habilitados App) y Total Guardias
         const guardiasActivos = await Guardia.count({ where: { activo_app: true } });
+        const totalGuardias = await Guardia.count();
 
         // 3. Stock Crítico (Actual <= Mínimo)
         const stockCritico = await Producto.count({
@@ -36,6 +37,7 @@ exports.getResumenOperativo = async (req, res) => {
         res.status(200).send({
             totalProductos,
             guardiasActivos,
+            totalGuardias,
             stockCritico,
             retirosHoy
         });

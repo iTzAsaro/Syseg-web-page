@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Bell, ChevronDown, ShoppingCart } from 'lucide-react';
+import { Menu, Bell, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -57,7 +57,6 @@ const Header = ({ onMenuClick }) => {
                     <p className="text-xs text-gray-500">{displayEmail}</p>
                 </div>
                 <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold border-2 border-gray-100 shadow-sm ring-2 ring-gray-50">{displayInitials}</div>
-                <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:block" />
             </div>
         </div>
     </header>

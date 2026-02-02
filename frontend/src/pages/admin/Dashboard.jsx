@@ -12,6 +12,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
       totalProductos: 0,
       guardiasActivos: 0,
+      totalGuardias: 0,
       stockCritico: 0,
       retirosHoy: 0
   });
@@ -47,9 +48,9 @@ const Dashboard = () => {
       trendBg: 'bg-emerald-50' 
     },
     { 
-      title: 'Guardias Activos', 
-      value: stats.guardiasActivos.toString(), 
-      trend: 'Habilitados App', 
+      title: 'Cantidad de Guardias', 
+      value: (stats.totalGuardias || 0).toString(), 
+      trend: 'Dotación Total', 
       icon: ShieldCheck, 
       trendColor: 'text-blue-700', 
       trendBg: 'bg-blue-50' 
@@ -148,8 +149,19 @@ const Dashboard = () => {
                                     <td className="px-6 py-4 text-gray-600">
                                         {mov.Usuario ? mov.Usuario.nombre : 'Sistema'}
                                     </td>
-                                    <td className="px-6 py-4 text-right text-gray-500">
-                                        {new Date(mov.fecha_hora || mov.fecha).toLocaleString()}
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex flex-col items-end">
+                                            <span className="font-bold text-gray-900 text-xs capitalize">
+                                                {new Date(mov.fecha_hora || mov.fecha).toLocaleDateString('es-CL', {
+                                                    day: '2-digit', month: 'short', year: 'numeric'
+                                                })}
+                                            </span>
+                                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+                                                {new Date(mov.fecha_hora || mov.fecha).toLocaleTimeString('es-CL', {
+                                                    hour: '2-digit', minute: '2-digit'
+                                                })}
+                                            </span>
+                                        </div>
                                     </td>
                                 </tr>
                             ))

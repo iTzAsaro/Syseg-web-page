@@ -6,7 +6,7 @@ const KpiCard = ({ title, value, trend, trendIcon: TrendIcon, icon: Icon, trendC
   <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300 group relative overflow-hidden flex flex-col h-full min-h-[160px]">
       <div className="flex justify-between items-start gap-4 relative z-10 mb-4">
           <div className="flex flex-col flex-1 min-w-0">
-              <p className="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2 truncate" title={title}>{title}</p>
+              <p className="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2" title={title}>{title}</p>
               <h3 className="text-3xl font-black text-gray-900 tracking-tight truncate">{value}</h3>
           </div>
           <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white shadow-lg shadow-black/10 group-hover:bg-red-600 group-hover:shadow-red-600/30 group-hover:scale-110 transition-all duration-300 shrink-0">

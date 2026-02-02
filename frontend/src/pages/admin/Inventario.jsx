@@ -288,7 +288,7 @@ const Inventario = () => {
                         {filteredProducts.map((item) => (
                             <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center justify-center gap-3">
+                                    <div className="flex items-center justify-start gap-3">
                                         <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 border border-gray-200 group-hover:border-red-200 group-hover:bg-red-50 group-hover:text-red-600 transition-all">
                                             <Box className="w-5 h-5" />
                                         </div>
