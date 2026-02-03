@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
     UserPlus, Search, User, Phone, Mail, AlertOctagon, Shirt, Footprints, Clock,
-    CreditCard, Smartphone, Trash2, Save, X, ShieldCheck, Loader2 
+    CreditCard, Smartphone, Trash2, Save, X, ShieldCheck, Loader2, Map as MapIcon, ChevronDown 
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import guardiaService from '../../services/guardiaService';
+import comunaService from '../../services/comunaService';
+import regionService from '../../services/regionService';
 import RequirePermission from '../../components/RequirePermission';
 import Swal from 'sweetalert2';
 
@@ -98,6 +100,13 @@ const formatPhone = (value) => {
 
 const Guardias = () => {
     const [guards, setGuards] = useState([]);
+    const [comunas, setComunas] = useState([]);
+    const [regions, setRegions] = useState([]);
+    const [selectedRegion, setSelectedRegion] = useState('');
+    const [regionSearch, setRegionSearch] = useState('');
+    const [showRegionDropdown, setShowRegionDropdown] = useState(false);
+    const [comunaSearch, setComunaSearch] = useState('');
+    const [showComunaDropdown, setShowComunaDropdown] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('personal');
@@ -116,7 +125,7 @@ const Guardias = () => {
         rut: '',
         nacimiento: '',
         civil: 'Soltero/a',
-        comuna: 'Santiago',
+        comuna_id: '',
         email: '',
         celular: '',
         nombre_emergencia: '',
@@ -138,7 +147,28 @@ const Guardias = () => {
 
     useEffect(() => {
         fetchGuards();
+        fetchRegions();
     }, []);
+
+    const fetchRegions = async () => {
+        try {
+            const data = await regionService.getAll();
+            setRegions(data);
+        } catch (error) {
+            console.error("Error cargando regiones:", error);
+        }
+    };
+
+    const fetchComunas = async (regionId = null) => {
+        try {
+            const data = await comunaService.getAll(regionId);
+            setComunas(data);
+            return data;
+        } catch (error) {
+            console.error("Error cargando comunas:", error);
+            return [];
+        }
+    };
 
     const fetchGuards = async () => {
         try {
@@ -151,7 +181,7 @@ const Guardias = () => {
         }
     };
 
-    const handleOpenModal = (guard = null) => {
+    const handleOpenModal = async (guard = null) => {
         setRutError(''); // Limpiar error al abrir modal
         setNacimientoError('');
         if (guard) {
@@ -159,6 +189,41 @@ const Guardias = () => {
             setEditingId(guard.id);
             const isCuentaRut = guard.banco_nombre === 'BancoEstado' && guard.banco_tipo_cuenta === 'Cuenta Vista';
             
+            // Determinar Región y cargar Comunas
+            let regionId = '';
+            // Asegurar que las regiones estén cargadas
+            if (regions.length === 0) {
+                await fetchRegions();
+            }
+
+            const comunaData = guard.Comuna || guard.comuna;
+            if (comunaData && comunaData.region_id) {
+                regionId = comunaData.region_id;
+            } else if (guard.comuna_id) {
+                // Si no viene el objeto Comuna pero sí el ID, tendríamos que buscar la región... 
+                // pero asumimos que el backend envía el include Comuna.
+            }
+            
+            setSelectedRegion(regionId);
+            if (regionId) {
+                const regionName = regions.find(r => r.id === regionId)?.nombre || '';
+                setRegionSearch(regionName);
+                const loadedComunas = await fetchComunas(regionId);
+                
+                // Set comuna search text
+                const currentComunaId = guard.comuna_id || (guard.Comuna?.id) || (guard.comuna?.id);
+                if (currentComunaId) {
+                    const comunaName = loadedComunas.find(c => c.id === currentComunaId)?.nombre || '';
+                    setComunaSearch(comunaName);
+                } else {
+                    setComunaSearch('');
+                }
+            } else {
+                setRegionSearch('');
+                setComunaSearch('');
+                setComunas([]);
+            }
+
             setFormData({
                 ...initialFormState,
                 ...guard,
@@ -172,7 +237,7 @@ const Guardias = () => {
                 banco_nombre: guard.banco_nombre || (isCuentaRut ? 'BancoEstado' : ''),
                 banco_tipo_cuenta: guard.banco_tipo_cuenta || (isCuentaRut ? 'Cuenta Vista' : ''),
                 banco_numero_cuenta: guard.banco_numero_cuenta || '',
-                comuna: guard.comuna || 'Santiago',
+                comuna_id: guard.comuna_id || '',
                 talla_camisa: guard.talla_camisa || 'M',
                 talla_pantalon: guard.talla_pantalon || '42',
                 talla_zapato: guard.talla_zapato || '41',
@@ -184,10 +249,27 @@ const Guardias = () => {
         } else {
             setUseRutPass(true);
             setEditingId(null);
+            setSelectedRegion('');
+            setComunas([]);
             setFormData(initialFormState);
         }
         setIsModalOpen(true);
         setActiveTab('personal');
+    };
+
+    const handleRegionSelect = (region) => {
+        setSelectedRegion(region.id);
+        setRegionSearch(region.nombre);
+        setShowRegionDropdown(false);
+        setFormData(prev => ({ ...prev, comuna_id: '' }));
+        setComunaSearch('');
+        fetchComunas(region.id);
+    };
+
+    const handleComunaSelect = (comuna) => {
+        setFormData(prev => ({ ...prev, comuna_id: comuna.id }));
+        setComunaSearch(comuna.nombre);
+        setShowComunaDropdown(false);
     };
 
     const handleCloseModal = () => {
@@ -312,7 +394,8 @@ const Guardias = () => {
         // Preparar datos para enviar (convertir fecha DD/MM/YYYY a ISO)
         const dataToSend = {
             ...formData,
-            nacimiento: displayToIsoDate(formData.nacimiento) || formData.nacimiento
+            nacimiento: displayToIsoDate(formData.nacimiento) || formData.nacimiento,
+            comuna_id: formData.comuna_id || null
         };
 
         try {
@@ -624,28 +707,120 @@ const Guardias = () => {
                                         {nacimientoError && <p className="text-xs text-red-500 mt-1 font-bold">{nacimientoError}</p>}
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Estado Civil</label>
-                                         <select 
-                                            name="civil"
-                                            value={formData.civil}
-                                            onChange={handleChange}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
-                                        >
-                                             <option>Soltero/a</option><option>Casado/a</option><option>Divorciado/a</option>
-                                         </select>
-                                    </div>
-                                     <div className="space-y-1.5">
-                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Comuna</label>
-                                         <select 
-                                            name="comuna"
-                                            value={formData.comuna}
-                                            onChange={handleChange}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
-                                        >
-                                             <option>Santiago</option><option>Providencia</option><option>Maipú</option>
-                                         </select>
+                                <div className="space-y-4">
+                                    {/* Región, Comuna y Estado Civil - Grid unificado */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {/* Región */}
+                                        <div className="space-y-1.5 relative">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Región</label>
+                                            <div className="relative group">
+                                                <MapIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors z-10" />
+                                                <input
+                                                    type="text"
+                                                    value={regionSearch}
+                                                    onChange={(e) => {
+                                                        setRegionSearch(e.target.value);
+                                                        setShowRegionDropdown(true);
+                                                        if (e.target.value === '') setSelectedRegion('');
+                                                    }}
+                                                    onFocus={() => setShowRegionDropdown(true)}
+                                                    onBlur={() => setTimeout(() => setShowRegionDropdown(false), 200)}
+                                                    placeholder="Buscar Región..."
+                                                    className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-black focus:ring-2 focus:ring-black transition-all outline-none"
+                                                />
+                                                <div className="absolute right-3 top-3.5 pointer-events-none">
+                                                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                                                </div>
+                                                
+                                                {/* Dropdown de Regiones */}
+                                                {showRegionDropdown && (
+                                                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                                        {regions.filter(r => r.nombre.toLowerCase().includes(regionSearch.toLowerCase())).length > 0 ? (
+                                                            regions.filter(r => r.nombre.toLowerCase().includes(regionSearch.toLowerCase())).map(region => (
+                                                                <button
+                                                                    key={region.id}
+                                                                    type="button"
+                                                                    onClick={() => handleRegionSelect(region)}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 hover:text-black transition-colors flex items-center justify-between group"
+                                                                >
+                                                                    <span>{region.nombre}</span>
+                                                                    {selectedRegion === region.id && (
+                                                                        <span className="w-2 h-2 rounded-full bg-black"></span>
+                                                                    )}
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <div className="px-4 py-3 text-sm text-gray-400 text-center">
+                                                                No se encontraron regiones
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Comuna */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Comuna</label>
+                                            <div className="relative group">
+                                                <MapIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                                                <input
+                                                    type="text"
+                                                    value={comunaSearch}
+                                                    onChange={(e) => {
+                                                        setComunaSearch(e.target.value);
+                                                        setShowComunaDropdown(true);
+                                                        if (e.target.value === '') setFormData(prev => ({ ...prev, comuna_id: '' }));
+                                                    }}
+                                                    onFocus={() => setShowComunaDropdown(true)}
+                                                    onBlur={() => setTimeout(() => setShowComunaDropdown(false), 200)}
+                                                    placeholder={selectedRegion ? "Buscar Comuna..." : "Seleccione Región primero"}
+                                                    disabled={!selectedRegion}
+                                                    className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-black focus:ring-2 focus:ring-black transition-all outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                                                />
+                                                <div className="absolute right-3 top-3.5 pointer-events-none">
+                                                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                                                </div>
+                                                
+                                                {/* Dropdown de Comunas */}
+                                                {showComunaDropdown && selectedRegion && (
+                                                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                                        {comunas.filter(c => c.nombre.toLowerCase().includes(comunaSearch.toLowerCase())).length > 0 ? (
+                                                            comunas.filter(c => c.nombre.toLowerCase().includes(comunaSearch.toLowerCase())).map(comuna => (
+                                                                <button
+                                                                    key={comuna.id}
+                                                                    type="button"
+                                                                    onClick={() => handleComunaSelect(comuna)}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 hover:text-black transition-colors flex items-center justify-between group"
+                                                                >
+                                                                    <span>{comuna.nombre}</span>
+                                                                    {formData.comuna_id === comuna.id && (
+                                                                        <span className="w-2 h-2 rounded-full bg-black"></span>
+                                                                    )}
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <div className="px-4 py-3 text-sm text-gray-400 text-center">
+                                                                No se encontraron comunas
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Estado Civil */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">Estado Civil</label>
+                                            <select 
+                                                name="civil"
+                                                value={formData.civil}
+                                                onChange={handleChange}
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
+                                            >
+                                                <option>Soltero/a</option><option>Casado/a</option><option>Divorciado/a</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
