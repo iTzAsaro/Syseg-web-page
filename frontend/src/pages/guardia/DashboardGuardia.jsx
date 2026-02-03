@@ -146,6 +146,71 @@ const DashboardGuardia = () => {
     return () => window.removeEventListener('message', handleIframeMessage);
   }, []);
 
+  // Cargar datos de borrador EPP automáticamente
+  useEffect(() => {
+      const fetchDraftEntrega = async () => {
+          if (currentView !== 'entregaEpp' || !user || !user.rut) return;
+
+          try {
+              const res = await api.get(`/entrega-epp/draft?rut=${user.rut}`);
+              const draft = res.data;
+              
+              if (draft) {
+                  // Actualizar encabezado
+                  setEppForm(prev => ({
+                      ...prev,
+                      nombre: draft.nombre_receptor || prev.nombre,
+                      rut: draft.rut_receptor || prev.rut,
+                      cargo: draft.cargo_receptor || prev.cargo,
+                      area: draft.observaciones || prev.area,
+                      fecha: draft.fecha_entrega ? draft.fecha_entrega.split('T')[0] : prev.fecha
+                  }));
+
+                  // Actualizar items
+                  if (draft.DetalleEntregaEpps && draft.DetalleEntregaEpps.length > 0) {
+                      setEppItems(prevItems => {
+                          const newItems = [...prevItems];
+                          
+                          draft.DetalleEntregaEpps.forEach(detail => {
+                              // Normalizar nombres para comparación
+                              const dbName = detail.nombre_producto.toLowerCase().trim();
+                              
+                              // Buscar coincidencia exacta o parcial
+                              const index = newItems.findIndex(i => {
+                                  const localName = i.name.toLowerCase().trim();
+                                  return localName === dbName || dbName.includes(localName) || localName.includes(dbName);
+                              });
+
+                              if (index !== -1) {
+                                  newItems[index].cantidad = detail.cantidad;
+                                  newItems[index].talla = detail.talla || newItems[index].talla;
+                                  newItems[index].locked = true;
+                              } else {
+                                  // Si no existe en la lista predefinida, agregarlo
+                                  newItems.push({
+                                      name: detail.nombre_producto,
+                                      cantidad: detail.cantidad,
+                                      talla: detail.talla || '',
+                                      observaciones: '',
+                                      locked: true
+                                  });
+                              }
+                          });
+                          return newItems;
+                      });
+                  }
+              }
+          } catch (err) {
+              // Ignorar 404 (No hay borrador), loguear otros errores
+              if (err.response && err.response.status !== 404) {
+                  console.error("Error cargando borrador EPP:", err);
+              }
+          }
+      };
+
+      fetchDraftEntrega();
+  }, [currentView, user]);
+
   // --- Funciones de Navegación ---
   const formatRut = (rut) => {
     if (!rut) return '';
@@ -388,25 +453,39 @@ const DashboardGuardia = () => {
             items: itemsToSend
         };
 
-        const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/entrega-epp', { // Ajustar URL base si es necesario
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-        });
+        const response = await api.post('/entrega-epp/finalize', payload);
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al guardar la entrega');
+        if (response.status === 200 || response.status === 201) {
+            import('sweetalert2').then((Swal) => {
+                Swal.default.fire({
+                    icon: 'success',
+                    title: 'Entrega Finalizada',
+                    text: 'El documento ha sido firmado y enviado por correo al supervisor.',
+                    timer: 3000,
+                    showConfirmButton: false
+                }).then(() => {
+                    // Reiniciar formulario
+                    setEppForm(prev => ({
+                        ...prev,
+                        observaciones: '',
+                        fecha: new Date().toISOString().split('T')[0]
+                    }));
+                    setEppItems(prev => prev.map(item => ({...item, cantidad: '', talla: '', observaciones: '', locked: false})));
+                    clearSignature();
+                    // Opcional: Volver al listado o recargar para buscar nuevos borradores
+                    handleViewChange('list');
+                });
+            });
         }
-
-        finalizeDocument();
     } catch (error) {
         console.error('Error submitting EPP:', error);
-        alert('Hubo un error al guardar el documento: ' + error.message);
+        import('sweetalert2').then((Swal) => {
+            Swal.default.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.response?.data?.message || error.message
+            });
+        });
     }
   };
 
@@ -1242,9 +1321,10 @@ const DashboardGuardia = () => {
                                                     <td className="px-2 py-2">
                                                         <input 
                                                             type="number" 
-                                                            className="form-input py-1 text-center bg-gray-900/50" 
+                                                            className={`form-input py-1 text-center ${item.locked ? 'bg-gray-800 cursor-not-allowed text-gray-400' : 'bg-gray-900/50'}`}
                                                             value={item.cantidad} 
                                                             onChange={(e) => handleItemChange(index, 'cantidad', e.target.value)}
+                                                            readOnly={item.locked || docsStatus.entregaEpp === 'completed'}
                                                             disabled={docsStatus.entregaEpp === 'completed'}
                                                         />
                                                     </td>

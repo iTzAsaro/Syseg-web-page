@@ -11,6 +11,15 @@ const MovimientoService = {
     },
 
     /**
+     * Obtiene los tipos de movimiento
+     * @returns {Promise<Array>} Lista de tipos
+     */
+    getTypes: async () => {
+        const response = await api.get('/tipos-movimiento');
+        return response.data;
+    },
+
+    /**
      * Crea un nuevo movimiento de inventario (Entrada/Salida)
      * @param {Object} data - Datos del movimiento
      * @returns {Promise<Object>} Movimiento creado

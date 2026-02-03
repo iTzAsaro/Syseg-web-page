@@ -1,7 +1,9 @@
-import React from 'react';
-import { X, ShoppingCart, Trash2, Plus, Minus, ArrowRight, Package } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, ShoppingCart, Trash2, ArrowRight, Package } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import RecipientSelector from './RecipientSelector';
+import movimientoService from '../services/movimientoService';
+import Swal from 'sweetalert2';
 
 const CartDrawer = () => {
   const { 
@@ -9,11 +11,118 @@ const CartDrawer = () => {
     isCartOpen, 
     toggleCart, 
     removeFromCart, 
-    updateQuantity, 
     updateRecipient,
     getCartTotal,
-    getCartCount
+    getCartCount,
+    clearCart
   } = useCart();
+  
+  const [processing, setProcessing] = useState(false);
+
+  const handleCheckout = async () => {
+    if (processing) return;
+
+    // 1. Validaciones previas en Frontend
+    for (const item of cartItems) {
+      if (!item.stock || item.stock <= 0) {
+         await Swal.fire({
+            icon: 'error',
+            title: 'Stock Insuficiente',
+            text: `El producto "${item.name}" no tiene stock disponible para retiro.`
+         });
+         return;
+      }
+      
+      // Contar cuántas veces aparece este producto en el carrito
+      const totalRequested = cartItems.filter(i => i.productId === item.productId).length;
+      if (totalRequested > item.stock) {
+         await Swal.fire({
+            icon: 'error',
+            title: 'Stock Insuficiente',
+            text: `Estás solicitando ${totalRequested} unidades de "${item.name}", pero solo hay ${item.stock} disponibles.`
+         });
+         return;
+      }
+      
+      if (!item.recipient || (!item.recipient.id && !item.recipient.name)) {
+          await Swal.fire({
+            icon: 'warning',
+            title: 'Faltan Destinatarios',
+            text: `Por favor asigna un destinatario para "${item.name}".`
+         });
+         return;
+      }
+    }
+
+    try {
+      setProcessing(true);
+      
+      // 2. Obtener tipos de movimiento para encontrar "Salida"
+      let exitType;
+      try {
+        const types = await movimientoService.getTypes();
+        exitType = types.find(t => 
+          t.nombre.toLowerCase().includes('salida') || 
+          t.nombre.toLowerCase().includes('entrega') || 
+          t.nombre.toLowerCase().includes('retiro')
+        );
+      } catch (err) {
+        console.warn("No se pudieron cargar los tipos de movimiento (posiblemente falta reiniciar backend). Usando fallback ID 2.", err);
+        // Fallback: Si falla la API (ej. endpoint no existe aun), usamos ID 2 que verificamos en DB es "Salida"
+        exitType = { id: 2, nombre: 'Salida' };
+      }
+      
+      if (!exitType) {
+        throw new Error('No se encontró el tipo de movimiento "Salida" en el sistema.');
+      }
+
+      // 3. Procesar retiros uno por uno (Secuencial para evitar condiciones de carrera en Backend)
+      // Mostramos loading
+      Swal.fire({
+        title: 'Procesando retiro...',
+        text: 'Registrando movimientos y actualizando stock',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      for (const item of cartItems) {
+        const payload = {
+          producto_id: item.productId,
+          tipo_movimiento_id: exitType.id,
+          cantidad: 1, 
+          documento_asociado_id: item.recipient ? item.recipient.id : null,
+        };
+        console.log("Enviando movimiento:", payload);
+        await movimientoService.create(payload);
+      }
+
+      // await Promise.all(promises);
+
+      // 4. Finalizar
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Retiro Exitoso!',
+        text: 'El stock ha sido actualizado correctamente.',
+        timer: 2000
+      });
+      
+      clearCart();
+      toggleCart();
+      window.location.reload(); // Recargar para actualizar inventario visual
+
+    } catch (error) {
+      console.error("Error en checkout:", error);
+      const errorMessage = error.response?.data?.message || error.message || 'Hubo un problema al procesar el retiro.';
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error en Retiro',
+        text: `Detalles: ${errorMessage}`
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   if (!isCartOpen) return null;
 
@@ -92,30 +201,8 @@ const CartDrawer = () => {
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5 mb-2">{item.category}</p>
                     
-                    {/* Controls Row */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1 border border-gray-100">
-                        <button 
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black disabled:opacity-50"
-                          disabled={item.quantity <= 1}
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
-                        <button 
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                      
-                      {/* Price (if applicable, assuming price exists or is 0) */}
-                      {/* <div className="font-bold text-gray-900 text-sm">
-                        ${((item.price || 0) * item.quantity).toLocaleString()}
-                      </div> */}
-                    </div>
+                    {/* Controls Removed as per requirement */}
+
                   </div>
                 </div>
 
@@ -148,11 +235,12 @@ const CartDrawer = () => {
 
             {/* Checkout Button */}
             <button 
-              className="w-full bg-black text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-black/20 hover:bg-gray-900 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
-              onClick={() => alert("Procesando retiro... (Lógica pendiente)")}
+              className="w-full bg-black text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-black/20 hover:bg-gray-900 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleCheckout}
+              disabled={processing}
             >
-              <span>Confirmar Retiro</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span>{processing ? 'Procesando...' : 'Confirmar Retiro'}</span>
+              {!processing && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
             </button>
           </div>
         )}

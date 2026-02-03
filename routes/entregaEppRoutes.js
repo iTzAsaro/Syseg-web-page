@@ -11,6 +11,8 @@ module.exports = function(app) {
     });
 
     app.post("/api/entrega-epp", [verifyToken], controller.createEntrega);
+    app.post("/api/entrega-epp/finalize", [verifyToken], controller.finalizeEntrega);
     app.get("/api/entrega-epp", [verifyToken], controller.getEntregas);
+    app.get("/api/entrega-epp/draft", [verifyToken], controller.getLastDraft);
     app.get("/api/entrega-epp/:id", [verifyToken], controller.getEntregaById);
 };

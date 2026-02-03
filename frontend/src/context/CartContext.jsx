@@ -32,16 +32,14 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (product) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id);
-      if (existingItem) {
-        return prevItems.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
+      // Generar un ID único para cada entrada del carrito
+      // Esto permite tener múltiples entradas del mismo producto con diferentes destinatarios
+      const cartItemId = `${product.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
       return [...prevItems, { 
         ...product, 
+        id: cartItemId, // ID único para la entrada del carrito
+        productId: product.id, // Preservamos el ID original del producto
         quantity: 1, 
         recipient: null // Estructura: { name, type, relation, address }
       }];

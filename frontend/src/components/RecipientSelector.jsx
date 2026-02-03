@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { User, Plus, MapPin, Briefcase } from 'lucide-react';
-
-// Datos simulados de destinatarios (en una app real vendrían de una API)
-const PREDEFINED_RECIPIENTS = [
-  { id: 'g1', name: 'Juan Pérez', type: 'Guardia', relation: 'Planta 1' },
-  { id: 'g2', name: 'María González', type: 'Guardia', relation: 'Planta 2' },
-  { id: 'g3', name: 'Pedro Silva', type: 'Supervisor', relation: 'Zona Norte' },
-];
+import guardiaService from '../services/guardiaService';
 
 const RecipientSelector = ({ item, onUpdate }) => {
   const [mode, setMode] = useState('select'); // 'select' | 'new'
   const [selectedId, setSelectedId] = useState('');
+  const [recipients, setRecipients] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   // Estado para nuevo destinatario
   const [newRecipient, setNewRecipient] = useState({
@@ -18,6 +14,21 @@ const RecipientSelector = ({ item, onUpdate }) => {
     relation: '',
     address: ''
   });
+
+  // Cargar guardias desde la base de datos
+  useEffect(() => {
+    const fetchRecipients = async () => {
+      try {
+        const data = await guardiaService.getAll();
+        setRecipients(data);
+      } catch (error) {
+        console.error("Error cargando destinatarios:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecipients();
+  }, []);
 
   // Inicializar selección basada en el item
   useEffect(() => {
@@ -40,9 +51,15 @@ const RecipientSelector = ({ item, onUpdate }) => {
     } else {
       setMode('select');
       setSelectedId(val);
-      const recipient = PREDEFINED_RECIPIENTS.find(r => r.id === val);
+      const recipient = recipients.find(r => r.id === parseInt(val) || r.id === val);
       if (recipient) {
-        onUpdate(recipient);
+        // Adaptar estructura si es necesario
+        onUpdate({
+            id: recipient.id,
+            name: recipient.nombre,
+            type: 'Guardia', // Asumimos rol guardia
+            relation: recipient.rut
+        });
       }
     }
   };
@@ -64,10 +81,11 @@ const RecipientSelector = ({ item, onUpdate }) => {
         className="w-full p-2 rounded-md border border-gray-200 bg-white text-gray-700 text-sm focus:ring-2 focus:ring-black/5 focus:border-black transition-all outline-none"
         value={mode === 'new' ? 'new' : selectedId}
         onChange={handleSelectChange}
+        disabled={loading}
       >
         <option value="" disabled>Seleccionar...</option>
-        {PREDEFINED_RECIPIENTS.map(r => (
-          <option key={r.id} value={r.id}>{r.name} - {r.type}</option>
+        {recipients.map(r => (
+          <option key={r.id} value={r.id}>{r.nombre} - {r.rut}</option>
         ))}
         <option value="new">+ Nuevo Destinatario</option>
       </select>

@@ -72,8 +72,12 @@ Usuario.hasMany(MovimientoInventario, { foreignKey: 'usuario_id' });
 MovimientoInventario.belongsTo(Usuario, { foreignKey: 'usuario_id' });
 
 // DocumentoGuardia - MovimientoInventario (justifica entrega EPP)
-DocumentoGuardia.hasMany(MovimientoInventario, { foreignKey: 'documento_asociado_id' });
-MovimientoInventario.belongsTo(DocumentoGuardia, { foreignKey: 'documento_asociado_id' });
+// DocumentoGuardia.hasMany(MovimientoInventario, { foreignKey: 'documento_asociado_id' });
+// MovimientoInventario.belongsTo(DocumentoGuardia, { foreignKey: 'documento_asociado_id' });
+
+// Guardia - MovimientoInventario (Destinatario del movimiento/retiro)
+Guardia.hasMany(MovimientoInventario, { foreignKey: 'documento_asociado_id' });
+MovimientoInventario.belongsTo(Guardia, { foreignKey: 'documento_asociado_id' });
 
 // Guardia - AFP
 Afp.hasMany(Guardia, { foreignKey: 'afp_id' });
