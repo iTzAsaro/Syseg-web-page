@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    UserPlus, Search, User, Phone, Mail, AlertOctagon, Shirt, 
+    UserPlus, Search, User, Phone, Mail, AlertOctagon, Shirt, Footprints, Clock,
     CreditCard, Smartphone, Trash2, Save, X, ShieldCheck, Loader2 
 } from 'lucide-react';
 import Layout from '../../components/Layout';
@@ -105,6 +105,7 @@ const Guardias = () => {
     const [deletingId, setDeletingId] = useState(null);
     const [rutError, setRutError] = useState('');
     const [nacimientoError, setNacimientoError] = useState('');
+    const [useRutPass, setUseRutPass] = useState(true);
     
     // Calculate max date (18 years ago) for validation
     const today = new Date();
@@ -154,6 +155,7 @@ const Guardias = () => {
         setRutError(''); // Limpiar error al abrir modal
         setNacimientoError('');
         if (guard) {
+            setUseRutPass(false);
             setEditingId(guard.id);
             const isCuentaRut = guard.banco_nombre === 'BancoEstado' && guard.banco_tipo_cuenta === 'Cuenta Vista';
             
@@ -180,6 +182,7 @@ const Guardias = () => {
                 // Asumiendo que el backend devuelve estos campos tal cual
             });
         } else {
+            setUseRutPass(true);
             setEditingId(null);
             setFormData(initialFormState);
         }
@@ -199,6 +202,13 @@ const Guardias = () => {
         
         if (name === 'rut') {
             newValue = formatRut(value);
+
+            // Auto-generar contraseña si está activado
+            if (useRutPass) {
+                const cleanBody = newValue.replace(/\./g, '').split('-')[0];
+                extraUpdates.password = cleanBody.length >= 4 ? cleanBody.slice(-4) : cleanBody;
+            }
+
             // Validar RUT
             if (newValue.length > 0) {
                 if (!validateRut(newValue)) {
@@ -450,14 +460,16 @@ const Guardias = () => {
                             
                             {/* Tags Tallas */}
                             <div className="flex gap-2 pt-2">
-                                <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-500 flex items-center gap-1">
-                                    <Shirt className="w-3 h-3" /> {guard.talla_camisa || '-'}
+                                <span className="px-3 py-1.5 bg-gray-100 rounded text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                                    <Shirt className="w-4 h-4" /> {guard.talla_camisa || '-'}
                                 </span>
-                                <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-500">
-                                    P: {guard.talla_pantalon || '-'}
+                                <span className="px-3 py-1.5 bg-gray-100 rounded text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                                        <path d="M17 2h-10c-1.1 0-2 .9-2 2v18h4v-8h6v8h4v-18c0-1.1-.9-2-2-2z" />
+                                    </svg> {guard.talla_pantalon || '-'}
                                 </span>
-                                <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-500 flex items-center gap-1">
-                                    <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M21.5,9C20.6,9 19.8,9.6 19.6,10.5L18.5,15.1C18.2,16.2 17.2,17 16.1,17H8.9L10.6,9.9C10.9,8.2 12.4,7 14.1,7H16V5H14.1C11.5,5 9.2,6.8 8.7,9.3L6.2,20H2V22H16.1C18.2,22 20.1,20.5 20.5,18.7L21.9,13H22V9H21.5Z"></path></svg>
+                                <span className="px-3 py-1.5 bg-gray-100 rounded text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                                    <Footprints className="w-4 h-4" />
                                     {guard.talla_zapato || '-'}
                                 </span>
                             </div>
@@ -474,9 +486,21 @@ const Guardias = () => {
                             </div>
                             
                             {/* App Status */}
-                            <div className="flex items-center justify-between text-xs pt-1">
-                                <span className="text-gray-400 font-medium">Último acceso:</span>
-                                <span className="text-gray-900 font-bold">{guard.ultimo_acceso ? new Date(guard.ultimo_acceso).toLocaleString() : 'Nunca'}</span>
+                            <div className="flex items-center justify-between text-xs pt-3 mt-2 border-t border-gray-50">
+                                <span className="text-gray-400 font-medium flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    Último acceso
+                                </span>
+                                <span className={`px-2.5 py-1 rounded-lg font-bold border shadow-sm ${
+                                    guard.ultimo_acceso 
+                                        ? 'bg-gray-50 text-gray-700 border-gray-100' 
+                                        : 'bg-yellow-50 text-yellow-700 border-yellow-100'
+                                }`}>
+                                    {guard.ultimo_acceso ? new Date(guard.ultimo_acceso).toLocaleString('es-CL', {
+                                        day: '2-digit', month: '2-digit', year: 'numeric',
+                                        hour: '2-digit', minute: '2-digit', hour12: false
+                                    }).replace(',', '') : 'Nunca'}
+                                </span>
                             </div>
                         </div>
 
@@ -768,13 +792,47 @@ const Guardias = () => {
                                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                                         </label>
                                     </div>
+
+                                    {formData.activo_app && (
+                                        <div className="flex items-center gap-2 px-1">
+                                            <input 
+                                                type="checkbox" 
+                                                id="useRutPass"
+                                                checked={useRutPass}
+                                                onChange={(e) => {
+                                                    const isChecked = e.target.checked;
+                                                    setUseRutPass(isChecked);
+                                                    if (isChecked) {
+                                                        const cleanBody = formData.rut.replace(/\./g, '').split('-')[0];
+                                                        const pass = cleanBody.length >= 4 ? cleanBody.slice(-4) : cleanBody;
+                                                        setFormData(prev => ({ ...prev, password: pass }));
+                                                    } else {
+                                                        // Si se desmarca y estamos editando, tal vez limpiar?
+                                                        // O dejar el valor actual para que lo editen.
+                                                        // Dejarlo es mejor UX.
+                                                    }
+                                                }}
+                                                className="rounded text-red-600 focus:ring-red-500 w-4 h-4 cursor-pointer accent-red-600"
+                                            />
+                                            <label htmlFor="useRutPass" className="text-xs text-gray-600 cursor-pointer select-none font-medium">
+                                                Usar últimos 4 dígitos del RUT como clave
+                                            </label>
+                                        </div>
+                                    )}
+
                                     <input 
                                         type="password" 
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        placeholder="Contraseña de acceso" 
-                                        className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none"
+                                        placeholder={useRutPass ? "Clave generada por RUT" : "Contraseña personalizada"} 
+                                        readOnly={useRutPass}
+                                        disabled={!formData.activo_app}
+                                        className={`w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none transition-all ${
+                                            useRutPass 
+                                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-dashed' 
+                                                : 'focus:ring-2 focus:ring-black'
+                                        } ${!formData.activo_app ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     />
                                 </div>
 

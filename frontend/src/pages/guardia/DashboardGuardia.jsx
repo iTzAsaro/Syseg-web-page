@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   FileText, LogOut, User, ChevronLeft, ChevronRight, 
   Eye, CheckCircle, AlertTriangle, Shield, Menu, X,
-  Search, Bell
+  Search, Bell, Banknote, Download, Construction
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../api/axios';
 
 // Estilos personalizados inyectados
 const CustomStyles = () => (
@@ -62,6 +64,7 @@ const CustomStyles = () => (
 );
 
 const DashboardGuardia = () => {
+  const { user } = useAuth();
   // --- Estados ---
   const [currentView, setCurrentView] = useState('list'); // list, ficha, irl
   const [irlPage, setIrlPage] = useState(1);
@@ -73,7 +76,8 @@ const DashboardGuardia = () => {
     reglamento: 'pending',
     pactoHoras: 'pending',
     actaDeberes: 'pending',
-    entregaEpp: 'pending'
+    entregaEpp: 'pending',
+    liquidaciones: 'pending'
   });
   
   // Estado para formulario EPP
@@ -104,6 +108,13 @@ const DashboardGuardia = () => {
 
   const [externalHtml, setExternalHtml] = useState(null);
   const [isLoadingExternal, setIsLoadingExternal] = useState(false);
+
+  // Estados Liquidaciones
+  const [liqMonth, setLiqMonth] = useState('Enero');
+  const [liqYear, setLiqYear] = useState('2026');
+  const [showLiqDoc, setShowLiqDoc] = useState(false);
+  const [liqLoading, setLiqLoading] = useState(false);
+  const [liqData, setLiqData] = useState(null);
   
   // Canvas Refs
   const canvasRef = useRef(null);
@@ -136,6 +147,15 @@ const DashboardGuardia = () => {
   }, []);
 
   // --- Funciones de Navegación ---
+  const formatRut = (rut) => {
+    if (!rut) return '';
+    const cleanRut = rut.replace(/[^0-9kK]/g, '');
+    if (cleanRut.length <= 1) return cleanRut;
+    const body = cleanRut.slice(0, -1);
+    const dv = cleanRut.slice(-1).toUpperCase();
+    return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`;
+  };
+
   const handleViewChange = (view) => {
     setCurrentView(view);
     if (view === 'irl') {
@@ -254,6 +274,66 @@ const DashboardGuardia = () => {
     setShowModal(false);
     handleViewChange('list');
   };
+
+  // --- Lógica Liquidaciones (ELIMINADO - FEATURE DISABLED) ---
+  /*
+  const handleSearchLiquidacion = async () => {
+    setLiqLoading(true);
+    setShowLiqDoc(false);
+    setLiqData(null);
+    try {
+        const response = await api.get(`/liquidaciones?mes=${liqMonth}&anio=${liqYear}`);
+        setLiqData(response.data);
+        setShowLiqDoc(true);
+        if (response.data.es_simulacion) {
+          // Opcional: Podríamos mostrar un toast o alerta no bloqueante aquí si se desea
+          console.log("Visualizando datos simulados");
+        }
+    } catch (error) {
+        // Si es 401, el interceptor ya muestra el modal de sesión expirada
+        if (error.response && error.response.status === 401) return;
+        
+        console.error("Error fetching liquidacion:", error);
+        const msg = error.response?.data?.message || "No se pudo obtener la liquidación para el periodo seleccionado.";
+        alert(msg);
+    } finally {
+        setLiqLoading(false);
+    }
+  };
+  */
+
+  const handleFinalizeLiquidacion = () => {
+      setDocsStatus(prev => ({ ...prev, liquidaciones: 'completed' }));
+      setShowModal(true);
+  };
+
+  /*
+  const handleDownloadLiquidacion = () => {
+      const input = document.getElementById('liq-content');
+      if (!input) return;
+
+      // Ocultar botones antes de generar
+      const btns = input.querySelector('.liq-actions');
+      if(btns) btns.style.display = 'none';
+
+      html2canvas(input, { scale: 2 }).then((canvas) => {
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'letter');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.save(`Liquidacion_${liqMonth}_${liqYear}.pdf`);
+
+          // Restaurar botones
+          if(btns) btns.style.display = 'flex';
+      }).catch(err => {
+          console.error("Error generating PDF:", err);
+          if(btns) btns.style.display = 'flex';
+          alert("Error al generar el PDF");
+      });
+  };
+  */
 
   // --- Lógica EPP ---
   const handleEppChange = (e) => {
@@ -612,13 +692,35 @@ const DashboardGuardia = () => {
                 )}
             </h2>
             <div className="flex items-center gap-3 pl-6 border-l border-gray-800 h-10">
-                <div className="flex flex-col items-end mr-1 hidden sm:flex">
-                    <span className="text-sm font-bold text-white leading-none">Oficial Ramírez</span>
-                    <span className="text-[10px] text-green-500 font-medium tracking-wide flex items-center gap-1 mt-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> EN TURNO
-                    </span>
+                {user && (
+                    <div className="flex flex-col items-end mr-1 hidden sm:flex">
+                        {(() => {
+                            const parts = user.nombre.split(' ');
+                            let line1 = '', line2 = '';
+                            if (parts.length >= 4) {
+                                line1 = parts.slice(0, 2).join(' ');
+                                line2 = parts.slice(2).join(' ');
+                            } else if (parts.length === 3) {
+                                line1 = parts[0];
+                                line2 = parts.slice(1).join(' ');
+                            } else if (parts.length === 2) {
+                                line1 = parts[0];
+                                line2 = parts[1];
+                            } else {
+                                line1 = user.nombre;
+                            }
+                            return (
+                                <>
+                                    <span className="text-sm font-bold text-white leading-tight">{line1}</span>
+                                    {line2 && <span className="text-xs font-medium text-gray-400 leading-tight">{line2}</span>}
+                                </>
+                            );
+                        })()}
+                    </div>
+                )}
+                <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-300 border border-gray-600 shadow-sm">
+                    {user ? user.nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'G'}
                 </div>
-                <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-300 border border-gray-600 shadow-sm">OR</div>
             </div>
         </header>
 

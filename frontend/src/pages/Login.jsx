@@ -27,6 +27,16 @@ export default function Login() {
   const [isLoadingGuard, setIsLoadingGuard] = useState(false); // Estado de carga
   const [errorGuard, setErrorGuard] = useState(''); // Mensajes de error
 
+  // Helper para formatear RUT
+  const formatRut = (rut) => {
+    if (!rut) return '';
+    const cleanRut = rut.replace(/[^0-9kK]/g, '');
+    if (cleanRut.length <= 1) return cleanRut;
+    const body = cleanRut.slice(0, -1);
+    const dv = cleanRut.slice(-1).toUpperCase();
+    return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`;
+  };
+
   // Manejador de envío del formulario de Supervisor
   const handleSupervisorSubmit = async (e) => {
     e.preventDefault();
@@ -85,7 +95,8 @@ export default function Login() {
     setIsLoadingGuard(true);
     setErrorGuard('');
 
-    // --- MODO PRUEBAS: Bypass si campos están vacíos ---
+    // --- MODO PRUEBAS: Bypass DESACTIVADO ---
+    /*
     if ((!rutGuard || rutGuard.trim() === '') && (!passGuard || passGuard.trim() === '')) {
       console.log('⚠️ Login Bypass: Accediendo como Guardia de Prueba');
       const dummyUser = {
@@ -101,6 +112,7 @@ export default function Login() {
       setIsLoadingGuard(false);
       return;
     }
+    */
 
     try {
       // Petición de login para la aplicación móvil/operativa (Guardias)
@@ -301,12 +313,12 @@ export default function Login() {
                                       </svg>
                                   </div>
                                   <input 
-                                      className="transition-all duration-200 ease-in-out block w-full pl-10 pr-3 h-12 border border-gray-700 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent sm:text-sm shadow-sm" 
-                                      placeholder="12.345.678-9" 
-                                      type="text" 
-                                      value={rutGuard}
-                                      onChange={(e) => setRutGuard(e.target.value)}
-                                  />
+                                          className="transition-all duration-200 ease-in-out block w-full pl-10 pr-3 h-12 border border-gray-700 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent sm:text-sm shadow-sm" 
+                                          placeholder="12.345.678-9" 
+                                          type="text" 
+                                          value={rutGuard}
+                                          onChange={(e) => setRutGuard(formatRut(e.target.value))}
+                                      />
                               </div>
                           </div>
 
