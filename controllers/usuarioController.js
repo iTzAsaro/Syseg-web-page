@@ -1,4 +1,4 @@
-const { Usuario, Rol, Permiso, Auditoria, UsuarioPermiso, sequelize } = require('../models');
+const { Usuario, Rol, Permiso, Auditoria, Region, UsuarioPermiso, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
 // Helper para crear logs de auditoría
@@ -14,7 +14,7 @@ const logAudit = async (usuario_id, objetivo_id, accion, detalles, transaction) 
 exports.crear = async (req, res) => {
     const t = await sequelize.transaction();
     try {
-        const { nombre, email, password, rol_id } = req.body;
+        const { nombre, email, password, rol_id, regiones } = req.body;
         
         const usuario = await Usuario.create({
             nombre,
@@ -24,7 +24,12 @@ exports.crear = async (req, res) => {
             estado: true
         }, { transaction: t });
 
-        await logAudit(req.userId, usuario.id, 'CREAR_USUARIO', { nombre, email, rol_id }, t);
+        // Asignar regiones si se proporcionan (especialmente para Supervisores)
+        if (regiones && regiones.length > 0) {
+            await usuario.setRegions(regiones, { transaction: t });
+        }
+
+        await logAudit(req.userId, usuario.id, 'CREAR_USUARIO', { nombre, email, rol_id, regiones }, t);
 
         await t.commit();
         res.status(201).send({ message: "¡Usuario registrado exitosamente!", usuario });
@@ -53,7 +58,8 @@ exports.buscarTodos = async (req, res) => {
             where,
             include: [
                 { model: Rol },
-                { model: Permiso, through: { attributes: [] } } // Incluir permisos
+                { model: Permiso, through: { attributes: [] } }, // Incluir permisos
+                { model: Region, through: { attributes: [] } } // Incluir regiones
             ],
             distinct: true,
             limit: parseInt(limit),
@@ -116,7 +122,7 @@ exports.buscarUno = async (req, res) => {
     try {
         const id = req.params.id;
         const usuario = await Usuario.findByPk(id, {
-            include: [Rol, Permiso]
+            include: [Rol, Permiso, Region]
         });
 
         if (usuario) {
@@ -133,7 +139,7 @@ exports.actualizar = async (req, res) => {
     const t = await sequelize.transaction();
     try {
         const id = req.params.id;
-        const { nombre, email, rol_id } = req.body; // No actualizamos password aquí por seguridad
+        const { nombre, email, rol_id, regiones } = req.body; // No actualizamos password aquí por seguridad
 
         const usuario = await Usuario.findByPk(id);
         if (!usuario) {
@@ -145,8 +151,13 @@ exports.actualizar = async (req, res) => {
         
         await usuario.update({ nombre, email, rol_id }, { transaction: t });
 
-        if (JSON.stringify(oldData) !== JSON.stringify({ nombre, email, rol_id })) {
-            await logAudit(req.userId, id, 'ACTUALIZAR_USUARIO', { anterior: oldData, nuevo: { nombre, email, rol_id } }, t);
+        // Actualizar regiones
+        if (regiones !== undefined) {
+            await usuario.setRegions(regiones, { transaction: t });
+        }
+
+        if (JSON.stringify(oldData) !== JSON.stringify({ nombre, email, rol_id }) || regiones !== undefined) {
+            await logAudit(req.userId, id, 'ACTUALIZAR_USUARIO', { anterior: oldData, nuevo: { nombre, email, rol_id, regiones } }, t);
         }
 
         await t.commit();

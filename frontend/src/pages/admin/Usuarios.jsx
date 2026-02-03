@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import usuarioService from '../../services/usuarioService';
+import regionService from '../../services/regionService';
 import RequirePermission from '../../components/RequirePermission';
 import Swal from 'sweetalert2';
 
@@ -11,6 +12,7 @@ const Usuarios = () => {
     const [usuarios, setUsuarios] = useState([]);
     const [roles, setRoles] = useState([]);
     const [allPermisos, setAllPermisos] = useState([]);
+    const [allRegiones, setAllRegiones] = useState([]); // Nueva variable de estado para regiones
     const [loading, setLoading] = useState(true);
     
     // Filtros y Paginación
@@ -30,7 +32,8 @@ const Usuarios = () => {
         nombre: '',
         email: '',
         password: '',
-        rol_id: ''
+        rol_id: '',
+        regiones: [] // Nuevo campo para regiones
     };
     const [formData, setFormData] = useState(initialFormState);
     const [selectedPermisos, setSelectedPermisos] = useState([]);
@@ -45,12 +48,14 @@ const Usuarios = () => {
 
     const fetchMetadata = async () => {
         try {
-            const [rolesData, permisosData] = await Promise.all([
+            const [rolesData, permisosData, regionesData] = await Promise.all([
                 usuarioService.getRoles(),
-                usuarioService.getPermissions()
+                usuarioService.getPermissions(),
+                regionService.getAll()
             ]);
             setRoles(rolesData.data);
             setAllPermisos(permisosData.data);
+            setAllRegiones(regionesData);
         } catch (error) {
             console.error("Error cargando metadatos:", error);
         }
@@ -84,7 +89,8 @@ const Usuarios = () => {
                 nombre: user.nombre,
                 email: user.email,
                 password: '', // No mostrar password
-                rol_id: user.rol_id
+                rol_id: user.rol_id,
+                regiones: user.Regions ? user.Regions.map(r => r.id) : [] // Cargar regiones asignadas
             });
         } else {
             setEditingUser(null);
@@ -118,6 +124,17 @@ const Usuarios = () => {
                 return prev.filter(id => id !== permisoId);
             } else {
                 return [...prev, permisoId];
+            }
+        });
+    };
+
+    const handleRegionToggle = (regionId) => {
+        setFormData(prev => {
+            const currentRegiones = prev.regiones || [];
+            if (currentRegiones.includes(regionId)) {
+                return { ...prev, regiones: currentRegiones.filter(id => id !== regionId) };
+            } else {
+                return { ...prev, regiones: [...currentRegiones, regionId] };
             }
         });
     };
@@ -232,6 +249,7 @@ const Usuarios = () => {
                             <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
                                 <th className="p-4 border-b">Usuario</th>
                                 <th className="p-4 border-b">Rol</th>
+                                <th className="p-4 border-b">Zonas</th>
                                 <th className="p-4 border-b">Estado</th>
                                 <th className="p-4 border-b">Permisos</th>
                                 <th className="p-4 border-b text-right">Acciones</th>
@@ -263,6 +281,19 @@ const Usuarios = () => {
                                             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                                                 {getRoleName(user.rol_id)}
                                             </span>
+                                        </td>
+                                        <td className="p-4">
+                                            {user.Regions && user.Regions.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {user.Regions.map(r => (
+                                                        <span key={r.id} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">
+                                                            {r.nombre}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 text-xs">-</span>
+                                            )}
                                         </td>
                                         <td className="p-4">
                                             <button 
@@ -394,34 +425,66 @@ const Usuarios = () => {
                                 />
                             </div>
 
-                            {!editingUser && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">Contraseña</label>
                                     <input
                                         type="password"
                                         name="password"
                                         value={formData.password}
                                         onChange={handleInputChange}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                        required
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder={editingUser ? "Dejar en blanco para mantener" : "Mínimo 6 caracteres"}
+                                        required={!editingUser}
                                     />
                                 </div>
-                            )}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">Rol</label>
+                                    <select
+                                        name="rol_id"
+                                        value={formData.rol_id}
+                                        onChange={handleInputChange}
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    >
+                                        <option value="">Seleccionar Rol</option>
+                                        {roles.map(rol => (
+                                            <option key={rol.id} value={rol.id}>{rol.nombre}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-                                <select
-                                    name="rol_id"
-                                    value={formData.rol_id}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    required
-                                >
-                                    <option value="">Seleccione un Rol</option>
-                                    {roles.map(role => (
-                                        <option key={role.id} value={role.id}>{role.nombre}</option>
-                                    ))}
-                                </select>
+                            {/* Selector de Regiones (Disponible para todos los roles) */}
+                            <div className="space-y-2 mt-4 border-t pt-4">
+                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                    <Shield size={16} />
+                                    Zonas Asignadas (Regiones)
+                                </label>
+                                {allRegiones.length === 0 ? (
+                                    <p className="text-sm text-gray-500 italic">No hay regiones registradas en el sistema.</p>
+                                ) : (
+                                    <>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border rounded-lg bg-gray-50">
+                                            {allRegiones.map((region) => (
+                                                <label key={region.id} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.regiones && formData.regiones.includes(region.id)}
+                                                        onChange={() => handleRegionToggle(region.id)}
+                                                        className="rounded text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-sm text-gray-700">{region.nombre}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-gray-500">
+                                            {String(formData.rol_id) === '3' 
+                                                ? "Seleccione las zonas que supervisará este usuario."
+                                                : "Opcional: Asigne zonas si este usuario requiere acceso específico por región."}
+                                        </p>
+                                    </>
+                                )}
                             </div>
 
                             <div className="flex justify-end gap-3 mt-6">
