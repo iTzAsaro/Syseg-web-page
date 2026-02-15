@@ -78,26 +78,57 @@ exports.create = async (req, res) => {
 // Obtener registros con filtros y paginación
 exports.buscarTodos = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search, nivel, fechaInicio, fechaFin } = req.query;
+        const { page = 1, limit = 10, search, nivel, fechaInicio, fechaFin, usuarioId, categoria, accion } = req.query;
         const offset = (page - 1) * limit;
         const usuario_id = req.userId; // ID del usuario autenticado
-        
-        // Filtro base: Solo mostrar bitácoras del usuario autenticado
-        let condition = { usuario_id };
+
+        // Determinar si es Administrador a partir del token (o fallback a consulta)
+        let esAdmin = false;
+        if (req.userRole === 'Admin' || req.userRole === 1) {
+            esAdmin = true;
+        } else {
+            try {
+                const u = await Usuario.findByPk(usuario_id);
+                if (u && u.rol_id === 1) esAdmin = true;
+            } catch (_) { /* noop */ }
+        }
+
+        // Filtro base:
+        // - Admin: puede ver todos; opcionalmente filtra por usuarioId
+        // - No Admin: restringir a su propio usuario
+        let condition = {};
+        if (!esAdmin) {
+            condition.usuario_id = usuario_id;
+        }
+        if (usuarioId) {
+            condition.usuario_id = usuarioId;
+        }
 
         // Filtro por búsqueda (autor, acción, descripcion o categoria)
         if (search) {
-            condition[Op.and] = [
-                { usuario_id },
-                {
-                    [Op.or]: [
-                        { autor: { [Op.like]: `%${search}%` } },
-                        { accion: { [Op.like]: `%${search}%` } },
-                        { descripcion: { [Op.like]: `%${search}%` } },
-                        { categoria: { [Op.like]: `%${search}%` } }
-                    ]
-                }
-            ];
+            const orBlock = {
+                [Op.or]: [
+                    { autor: { [Op.like]: `%${search}%` } },
+                    { accion: { [Op.like]: `%${search}%` } },
+                    { descripcion: { [Op.like]: `%${search}%` } },
+                    { categoria: { [Op.like]: `%${search}%` } }
+                ]
+            };
+            if (condition[Op.and]) {
+                condition[Op.and].push(orBlock);
+            } else {
+                condition[Op.and] = [orBlock];
+            }
+        }
+
+        // Filtro por categoría (tipo de acción)
+        if (categoria && categoria !== 'Todos') {
+            condition.categoria = categoria;
+        }
+
+        // Filtro por acción (texto exacto o parcial)
+        if (accion) {
+            condition.accion = { [Op.like]: `%${accion}%` };
         }
 
         // Filtro por nivel

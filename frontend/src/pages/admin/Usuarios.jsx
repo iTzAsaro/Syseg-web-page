@@ -33,7 +33,8 @@ const Usuarios = () => {
         email: '',
         password: '',
         rol_id: '',
-        regiones: [] // Nuevo campo para regiones
+        regiones: [],
+        estado: true
     };
     const [formData, setFormData] = useState(initialFormState);
     const [selectedPermisos, setSelectedPermisos] = useState([]);
@@ -88,9 +89,10 @@ const Usuarios = () => {
             setFormData({
                 nombre: user.nombre,
                 email: user.email,
-                password: '', // No mostrar password
+                password: '',
                 rol_id: user.rol_id,
-                regiones: user.Regions ? user.Regions.map(r => r.id) : [] // Cargar regiones asignadas
+                regiones: user.Regions ? user.Regions.map(r => r.id) : [],
+                estado: typeof user.estado === 'boolean' ? user.estado : true
             });
         } else {
             setEditingUser(null);
@@ -144,9 +146,19 @@ const Usuarios = () => {
         try {
             if (editingUser) {
                 await usuarioService.update(editingUser.id, formData);
+
+                if (typeof editingUser.estado === 'boolean' && formData.estado !== editingUser.estado) {
+                    await usuarioService.changeStatus(editingUser.id, formData.estado);
+                }
+
                 Swal.fire('Actualizado', 'Usuario actualizado correctamente', 'success');
             } else {
-                await usuarioService.create(formData);
+                const response = await usuarioService.create(formData);
+
+                if (response?.data?.usuario && formData.estado === false) {
+                    await usuarioService.changeStatus(response.data.usuario.id, false);
+                }
+
                 Swal.fire('Creado', 'Usuario creado correctamente', 'success');
             }
             handleCloseModal();
@@ -485,6 +497,34 @@ const Usuarios = () => {
                                         </p>
                                     </>
                                 )}
+                            </div>
+
+                            <div className="flex items-center justify-between mt-4 border-t pt-4">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700">Estado del usuario</p>
+                                    <p className="text-xs text-gray-500">
+                                        {formData.estado
+                                            ? 'El usuario podrá acceder al sistema.'
+                                            : 'Usuario desactivado, sin acceso al sistema.'}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setFormData(prev => ({ ...prev, estado: !prev.estado }))
+                                    }
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${
+                                        formData.estado
+                                            ? 'bg-green-500 border-green-500'
+                                            : 'bg-gray-200 border-gray-300'
+                                    }`}
+                                >
+                                    <span
+                                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                                            formData.estado ? 'translate-x-5' : 'translate-x-1'
+                                        }`}
+                                    />
+                                </button>
                             </div>
 
                             <div className="flex justify-end gap-3 mt-6">

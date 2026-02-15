@@ -20,6 +20,11 @@ const Header = ({ onMenuClick }) => {
   const displayName = user?.nombre || 'Usuario';
   const displayEmail = user?.email || '';
   const displayInitials = getInitials(displayName);
+  const todayLabel = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  });
 
   return (
     <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 shadow-sm shrink-0 z-30">
@@ -50,6 +55,14 @@ const Header = ({ onMenuClick }) => {
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-600 rounded-full ring-2 ring-white"></span>
             </button>
+            <div className="hidden sm:flex flex-col items-end">
+                <p className="text-xs font-bold text-gray-900">
+                    {todayLabel}
+                </p>
+                <span className="text-[10px] text-green-600 font-bold uppercase tracking-wide flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> En Vivo
+                </span>
+            </div>
             <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
             <div className="flex items-center gap-3 pl-2 sm:pl-0 cursor-pointer hover:bg-gray-50 py-1.5 px-2 rounded-lg transition-colors">
                 <div className="text-right hidden md:block">
