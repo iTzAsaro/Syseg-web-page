@@ -19,7 +19,7 @@ import Swal from 'sweetalert2';
 import Layout from '../../components/Layout';
 import BitacoraService from '../../services/bitacoraService';
 import UsuarioService from '../../services/usuarioService';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 const BitacoraPage = () => {
   const { user, loading: authLoading } = useAuth();

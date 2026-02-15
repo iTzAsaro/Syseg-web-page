@@ -1,62 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Box, Minus, Plus, Save } from 'lucide-react';
-import categoriaService from '../services/categoriaService';
 
 // --- COMPONENTE: MODAL DE PRODUCTO (CREAR / EDITAR) ---
 // Permite agregar nuevos productos o editar los existentes
-const ProductModal = ({ isOpen, onClose, onSave, product }) => {
-    const [formData, setFormData] = useState({
-        name: '',
-        categoryId: '',
-        stock: 0,
-        minStock: 5,
-        description: '',
-        price: 0,
-        cost: 0
-    });
-    
-    const [categories, setCategories] = useState([]);
-
-    // Cargar categorías
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const data = await categoriaService.getAll();
-                setCategories(data);
-                // Si hay categorías y no hay selección, seleccionar la primera
-                if (data.length > 0 && !formData.categoryId) {
-                    setFormData(prev => ({ ...prev, categoryId: data[0].id }));
-                }
-            } catch (error) {
-                console.error("Error cargando categorías:", error);
-            }
-        };
-        if (isOpen) {
-            fetchCategories();
-        }
-    }, [isOpen]);
-
-    // Cargar datos del producto al abrir el modal en modo edición
-    useEffect(() => {
+const ProductModal = ({ isOpen, onClose, onSave, product, categories }) => {
+    const [formData, setFormData] = useState(() => {
         if (product) {
-            setFormData({
+            return {
                 name: product.name || '',
-                categoryId: product.categoria_id || product.categoryId || '', // Ajustar según backend
+                categoryId: product.categoria_id || product.categoryId || '',
                 stock: product.stock || 0,
                 minStock: product.minStock || 0,
                 description: product.descripcion || ''
-            });
-        } else {
-            // Resetear formulario para nuevo producto
-            setFormData({
-                name: '',
-                categoryId: categories.length > 0 ? categories[0].id : '',
-                stock: 0,
-                minStock: 5,
-                description: ''
-            });
+            };
         }
-    }, [product, isOpen, categories.length]);
+        return {
+            name: '',
+            categoryId: categories && categories.length > 0 ? categories[0].id : '',
+            stock: 0,
+            minStock: 5,
+            description: ''
+        };
+    });
 
     if (!isOpen) return null;
 

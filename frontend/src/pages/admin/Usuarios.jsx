@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
     UserPlus, Search, Edit, Trash2, Shield, Check, X, Lock, RefreshCw 
 } from 'lucide-react';
@@ -43,26 +43,7 @@ const Usuarios = () => {
         fetchMetadata();
     }, []);
 
-    useEffect(() => {
-        fetchUsuarios();
-    }, [page, searchTerm, roleFilter]);
-
-    const fetchMetadata = async () => {
-        try {
-            const [rolesData, permisosData, regionesData] = await Promise.all([
-                usuarioService.getRoles(),
-                usuarioService.getPermissions(),
-                regionService.getAll()
-            ]);
-            setRoles(rolesData.data);
-            setAllPermisos(permisosData.data);
-            setAllRegiones(regionesData);
-        } catch (error) {
-            console.error("Error cargando metadatos:", error);
-        }
-    };
-
-    const fetchUsuarios = async () => {
+    const fetchUsuarios = useCallback(async () => {
         try {
             setLoading(true);
             const params = {
@@ -80,6 +61,25 @@ const Usuarios = () => {
             console.error("Error cargando usuarios:", error);
         } finally {
             setLoading(false);
+        }
+    }, [page, searchTerm, roleFilter]);
+
+    useEffect(() => {
+        fetchUsuarios();
+    }, [fetchUsuarios]);
+
+    const fetchMetadata = async () => {
+        try {
+            const [rolesData, permisosData, regionesData] = await Promise.all([
+                usuarioService.getRoles(),
+                usuarioService.getPermissions(),
+                regionService.getAll()
+            ]);
+            setRoles(rolesData.data);
+            setAllPermisos(permisosData.data);
+            setAllRegiones(regionesData);
+        } catch (error) {
+            console.error("Error cargando metadatos:", error);
         }
     };
 
@@ -185,7 +185,7 @@ const Usuarios = () => {
             fetchUsuarios();
             const action = !user.estado ? 'activado' : 'desactivado';
             Swal.fire('Estado Cambiado', `Usuario ${action} correctamente`, 'success');
-        } catch (error) {
+        } catch {
             Swal.fire('Error', 'No se pudo cambiar el estado', 'error');
         }
     };
@@ -207,7 +207,7 @@ const Usuarios = () => {
                 await usuarioService.remove(user.id);
                 Swal.fire('Eliminado', 'El usuario ha sido eliminado.', 'success');
                 fetchUsuarios();
-            } catch (error) {
+            } catch {
                 Swal.fire('Error', 'No se pudo eliminar el usuario', 'error');
             }
         }

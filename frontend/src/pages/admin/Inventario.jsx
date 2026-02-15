@@ -5,7 +5,7 @@ import {
 import Layout from '../../components/Layout';
 import ProductModal from '../../components/ProductModal';
 import CategoryModal from '../../components/CategoryModal';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '../../context/useCart';
 import RequirePermission from '../../components/RequirePermission';
 import productoService from '../../services/productoService';
 import categoriaService from '../../services/categoriaService';
@@ -15,7 +15,6 @@ import Swal from 'sweetalert2';
 const Inventario = () => {
   // Estado de los productos
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const { addToCart } = useCart();
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,7 +32,6 @@ const Inventario = () => {
   // Cargar productos y categorías desde el backend
   const fetchData = async () => {
       try {
-          setLoading(true);
           const [productsData, categoriesData] = await Promise.all([
               productoService.getAll(),
               categoriaService.getAll()
@@ -53,8 +51,6 @@ const Inventario = () => {
       } catch (error) {
           console.error("Error cargando datos:", error);
           Swal.fire('Error', 'No se pudieron cargar los datos.', 'error');
-      } finally {
-          setLoading(false);
       }
   };
 
@@ -157,12 +153,15 @@ const Inventario = () => {
       <div className="space-y-6 animate-in fade-in duration-500 relative">
         
         {/* Modal de Producto */}
-        <ProductModal 
-            isOpen={isModalOpen} 
-            onClose={() => setIsModalOpen(false)} 
-            onSave={handleSaveProduct}
-            product={editingProduct}
-        />
+        {isModalOpen && (
+          <ProductModal 
+              isOpen={isModalOpen} 
+              onClose={() => setIsModalOpen(false)} 
+              onSave={handleSaveProduct}
+              product={editingProduct}
+              categories={categories}
+          />
+        )}
 
         {/* Modal de Categoría */}
         <CategoryModal

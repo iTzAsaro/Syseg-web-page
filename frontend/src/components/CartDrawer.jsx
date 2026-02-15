@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, ShoppingCart, Trash2, ArrowRight, Package } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 import RecipientSelector from './RecipientSelector';
 import movimientoService from '../services/movimientoService';
 import Swal from 'sweetalert2';
@@ -12,7 +12,6 @@ const CartDrawer = () => {
     toggleCart, 
     removeFromCart, 
     updateRecipient,
-    getCartTotal,
     getCartCount,
     clearCart
   } = useCart();

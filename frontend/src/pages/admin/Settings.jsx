@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Layout from '../../components/Layout';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { User, Mail, Shield, Lock, CheckCircle, AlertCircle, Save } from 'lucide-react';
 import api from '../../api/axios';
 import Swal from 'sweetalert2';

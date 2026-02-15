@@ -40,6 +40,11 @@ const Guardia = sequelize.define('Guardia', {
         type: DataTypes.DATEONLY,
         allowNull: true
     },
+    tipo_contrato: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+        defaultValue: 'CONTRATADO'
+    },
     celular: {
         type: DataTypes.STRING(20)
     },

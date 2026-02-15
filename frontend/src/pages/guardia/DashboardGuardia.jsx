@@ -5,7 +5,7 @@ import {
   Search, Bell, Banknote, Download, Construction
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import api from '../../api/axios';
 
 // Estilos personalizados inyectados
@@ -108,13 +108,6 @@ const DashboardGuardia = () => {
 
   const [externalHtml, setExternalHtml] = useState(null);
   const [isLoadingExternal, setIsLoadingExternal] = useState(false);
-
-  // Estados Liquidaciones
-  const [liqMonth, setLiqMonth] = useState('Enero');
-  const [liqYear, setLiqYear] = useState('2026');
-  const [showLiqDoc, setShowLiqDoc] = useState(false);
-  const [liqLoading, setLiqLoading] = useState(false);
-  const [liqData, setLiqData] = useState(null);
   
   // Canvas Refs
   const canvasRef = useRef(null);
@@ -212,15 +205,6 @@ const DashboardGuardia = () => {
   }, [currentView, user]);
 
   // --- Funciones de Navegación ---
-  const formatRut = (rut) => {
-    if (!rut) return '';
-    const cleanRut = rut.replace(/[^0-9kK]/g, '');
-    if (cleanRut.length <= 1) return cleanRut;
-    const body = cleanRut.slice(0, -1);
-    const dv = cleanRut.slice(-1).toUpperCase();
-    return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`;
-  };
-
   const handleViewChange = (view) => {
     setCurrentView(view);
     if (view === 'irl') {
@@ -367,11 +351,6 @@ const DashboardGuardia = () => {
   };
   */
 
-  const handleFinalizeLiquidacion = () => {
-      setDocsStatus(prev => ({ ...prev, liquidaciones: 'completed' }));
-      setShowModal(true);
-  };
-
   /*
   const handleDownloadLiquidacion = () => {
       const input = document.getElementById('liq-content');
@@ -401,6 +380,10 @@ const DashboardGuardia = () => {
   */
 
   // --- Lógica EPP ---
+  const generateEppPdf = () => {
+    window.print();
+  };
+
   const handleEppChange = (e) => {
     const { name, value } = e.target;
     setEppForm(prev => ({ ...prev, [name]: value }));
@@ -424,9 +407,6 @@ const DashboardGuardia = () => {
 
         // Obtener firma
         const canvas = canvasRef.current;
-        const isCanvasEmpty = !isDrawing.current && canvas.toDataURL() === document.createElement('canvas').toDataURL();
-        // Nota: la validación de canvas vacío es compleja, asumimos que si no ha dibujado nada (isDrawing flag) podría estar vacío, pero mejor confiar en visual.
-        // Una validación simple es verificar si hay datos de píxeles, pero por ahora confiaremos en que el usuario firme.
         const signatureData = canvas.toDataURL('image/png');
         
         // Filtrar items con cantidad > 0
@@ -567,97 +547,98 @@ const DashboardGuardia = () => {
       case 4:
       case 5:
       case 6:
-      case 7:
-        // Agrupar normas generales simplificadas para el ejemplo
+      case 7: {
         const normas = {
-            3: [
-                { id: 1, title: "Ley 16.744 Accidentes del Trabajo", items: ["Definición legal Accidentes.", "Beneficios médicos y subsidiarios.", "Pasos a seguir.", "Medios probatorios."] },
-                { id: 2, title: "Manejo Manual de Cargas", items: ["Hombres >18: 25Kg / Mujeres: 20Kg.", "Técnica de levantamiento."] }
-            ],
-            4: [
-                { id: 3, title: "Emergencias e Incendios", items: ["Brigada, Alarmas, Criterio Evacuación."] },
-                { id: 4, title: "Accidentes Graves y Fatales", items: ["Definición y Procedimiento SUSESO."] },
-                { id: 5, title: "EPP", items: ["Entrega, Uso y Cuidado."] }
-            ],
-            5: [
-                { id: 6, title: "Ergonomía", items: ["Postura correcta en silla."] },
-                { id: 7, title: "Extintores", items: ["Tipos de fuego y uso."] },
-                { id: 8, title: "Señalética", items: ["Colores y significados."] }
-            ],
-            6: [
-                { id: 9, title: "AST/ART", items: [] },
-                { id: 10, title: "PST", items: [] },
-                { id: 11, title: "Bloqueo", items: [] },
-                { id: 12, title: "Protocolos MINSAL", items: [] }
-            ],
-            7: [
-                 { id: 13, title: "Sustancias Químicas", items: ["HDS, EPP, Primeros Auxilios."] }
-            ]
+          3: [
+            { id: 1, title: "Ley 16.744 Accidentes del Trabajo", items: ["Definición legal Accidentes.", "Beneficios médicos y subsidiarios.", "Pasos a seguir.", "Medios probatorios."] },
+            { id: 2, title: "Manejo Manual de Cargas", items: ["Hombres >18: 25Kg / Mujeres: 20Kg.", "Técnica de levantamiento."] }
+          ],
+          4: [
+            { id: 3, title: "Emergencias e Incendios", items: ["Brigada, Alarmas, Criterio Evacuación."] },
+            { id: 4, title: "Accidentes Graves y Fatales", items: ["Definición y Procedimiento SUSESO."] },
+            { id: 5, title: "EPP", items: ["Entrega, Uso y Cuidado."] }
+          ],
+          5: [
+            { id: 6, title: "Ergonomía", items: ["Postura correcta en silla."] },
+            { id: 7, title: "Extintores", items: ["Tipos de fuego y uso."] },
+            { id: 8, title: "Señalética", items: ["Colores y significados."] }
+          ],
+          6: [
+            { id: 9, title: "AST/ART", items: [] },
+            { id: 10, title: "PST", items: [] },
+            { id: 11, title: "Bloqueo", items: [] },
+            { id: 12, title: "Protocolos MINSAL", items: [] }
+          ],
+          7: [
+            { id: 13, title: "Sustancias Químicas", items: ["HDS, EPP, Primeros Auxilios."] }
+          ]
         };
 
         return (
-            <div key={pageNum} className={pageClasses}>
-                <div className="p-6 md:p-8">
-                    <h3 className="section-title">NORMAS GENERALES ({Object.keys(normas).indexOf(String(pageNum)) !== -1 ? 'Cont.' : ''})</h3>
-                    <div className="space-y-6">
-                        {normas[pageNum].map((norma) => (
-                            <div key={norma.id} className="bg-gray-900/30 border border-gray-700/50 rounded-lg p-4">
-                                <label className="flex items-start cursor-pointer mb-3 group">
-                                    <div className="pt-1"><input type="checkbox" className="custom-checkbox" disabled={docsStatus.irl === 'completed'} /></div>
-                                    <span className="ml-3 text-sm font-bold text-gray-200 group-hover:text-red-400 transition-colors">{norma.id}.- {norma.title}.</span>
-                                </label>
-                                {norma.items.length > 0 && (
-                                    <ul className="list-disc pl-10 space-y-2 text-xs text-gray-400">
-                                        {norma.items.map((item, idx) => <li key={idx}>{item}</li>)}
-                                    </ul>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
+          <div key={pageNum} className={pageClasses}>
+            <div className="p-6 md:p-8">
+              <h3 className="section-title">NORMAS GENERALES ({Object.keys(normas).indexOf(String(pageNum)) !== -1 ? 'Cont.' : ''})</h3>
+              <div className="space-y-6">
+                {normas[pageNum].map((norma) => (
+                  <div key={norma.id} className="bg-gray-900/30 border border-gray-700/50 rounded-lg p-4">
+                    <label className="flex items-start cursor-pointer mb-3 group">
+                      <div className="pt-1"><input type="checkbox" className="custom-checkbox" disabled={docsStatus.irl === 'completed'} /></div>
+                      <span className="ml-3 text-sm font-bold text-gray-200 group-hover:text-red-400 transition-colors">{norma.id}.- {norma.title}.</span>
+                    </label>
+                    {norma.items.length > 0 && (
+                      <ul className="list-disc pl-10 space-y-2 text-xs text-gray-400">
+                        {norma.items.map((item, idx) => <li key={idx}>{item}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
+          </div>
         );
+      }
       case 8:
       case 9:
       case 10:
-      case 11:
-         const riesgos = {
-             8: [{ r: "Caídas y Golpes", c: "Esguinces, Heridas", m: ["Orden y aseo.", "No correr."] }],
-             9: [{ r: "Agresión / Delincuencia", c: "Lesiones físicas", m: ["Protocolos seguridad.", "Botón pánico."] }],
-             10: [{ r: "Fatiga / Evacuación", c: "Accidentes, Pánico", m: ["Pausas activas.", "Simulacros."] }],
-             11: [
-                 { r: "Digitación", sub: "En trabajos con computador", c: "Contractura muscular (Dorsales, Cuello, Lumbares). Circulatorias.", m: ["Diseño ergonómico.", "Limpieza pantalla.", "Posición segura.", "Pausas activas."] },
-                 { r: "Manejo de materiales", sub: "Sobreesfuerzos", c: "Lumbagos.", m: ["Técnica de levantamiento (rodillas dobladas).", "Uso de elementos auxiliares.", "Uso de EPP."] },
-                 { r: "Riesgos en la Vía Pública", sub: "Trayecto", c: "Heridas, Fracturas, Muerte.", m: ["Respetar señalización.", "Cruzar por pasos habilitados."] }
-             ]
-         };
-         return (
-            <div key={pageNum} className={pageClasses}>
-                <div className="p-6 md:p-8 flex-grow relative">
-                    <div className="overflow-x-auto rounded border border-gray-700">
-                        <table className="w-full text-left border-collapse risk-table">
-                            <thead><tr><th className="w-1/4">RIESGOS</th><th className="w-1/4">CONSECUENCIAS</th><th className="w-1/2">MEDIDAS PREVENTIVAS</th></tr></thead>
-                            <tbody>
-                                {riesgos[pageNum].map((row, idx) => (
-                                    <tr key={idx}>
-                                        <td>
-                                            <strong>{row.r}</strong>
-                                            {row.sub && <><br/><span className="text-xs text-gray-500">{row.sub}</span></>}
-                                        </td>
-                                        <td>{row.c}</td>
-                                        <td>
-                                            <ul className="risk-ul">
-                                                {row.m.map((med, midx) => <li key={midx}>{med}</li>)}
-                                            </ul>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+      case 11: {
+        const riesgos = {
+          8: [{ r: "Caídas y Golpes", c: "Esguinces, Heridas", m: ["Orden y aseo.", "No correr."] }],
+          9: [{ r: "Agresión / Delincuencia", c: "Lesiones físicas", m: ["Protocolos seguridad.", "Botón pánico."] }],
+          10: [{ r: "Fatiga / Evacuación", c: "Accidentes, Pánico", m: ["Pausas activas.", "Simulacros."] }],
+          11: [
+            { r: "Digitación", sub: "En trabajos con computador", c: "Contractura muscular (Dorsales, Cuello, Lumbares). Circulatorias.", m: ["Diseño ergonómico.", "Limpieza pantalla.", "Posición segura.", "Pausas activas."] },
+            { r: "Manejo de materiales", sub: "Sobreesfuerzos", c: "Lumbagos.", m: ["Técnica de levantamiento (rodillas dobladas).", "Uso de elementos auxiliares.", "Uso de EPP."] },
+            { r: "Riesgos en la Vía Pública", sub: "Trayecto", c: "Heridas, Fracturas, Muerte.", m: ["Respetar señalización.", "Cruzar por pasos habilitados."] }
+          ]
+        };
+        return (
+          <div key={pageNum} className={pageClasses}>
+            <div className="p-6 md:p-8 flex-grow relative">
+              <div className="overflow-x-auto rounded border border-gray-700">
+                <table className="w-full text-left border-collapse risk-table">
+                  <thead><tr><th className="w-1/4">RIESGOS</th><th className="w-1/4">CONSECUENCIAS</th><th className="w-1/2">MEDIDAS PREVENTIVAS</th></tr></thead>
+                  <tbody>
+                    {riesgos[pageNum].map((row, idx) => (
+                      <tr key={idx}>
+                        <td>
+                          <strong>{row.r}</strong>
+                          {row.sub && <><br /><span className="text-xs text-gray-500">{row.sub}</span></>}
+                        </td>
+                        <td>{row.c}</td>
+                        <td>
+                          <ul className="risk-ul">
+                            {row.m.map((med, midx) => <li key={midx}>{med}</li>)}
+                          </ul>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-         );
+          </div>
+        );
+      }
       case 12:
         return (
             <div key={12} className={pageClasses}>

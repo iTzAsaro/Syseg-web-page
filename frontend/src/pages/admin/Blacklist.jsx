@@ -157,7 +157,7 @@ export default function Blacklist() {
         await blacklistService.delete(id);
         Swal.fire('Eliminado', 'Registro eliminado correctamente', 'success');
         fetchBlacklist();
-      } catch (error) {
+      } catch {
         Swal.fire('Error', 'No se pudo eliminar el registro', 'error');
       }
     }
@@ -322,7 +322,7 @@ export default function Blacklist() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center justify-end gap-2">
                                             <RequirePermission permission="GESTIONAR_BLACKLIST">
                                                 <button 
                                                     onClick={() => handleOpenModal(record)} 

@@ -117,13 +117,12 @@ const Guardias = () => {
     const [useRutPass, setUseRutPass] = useState(true);
     
     // Calculate max date (18 years ago) for validation
-    const today = new Date();
-    
     // Estado del formulario
     const initialFormState = {
         nombre: '',
         rut: '',
         nacimiento: '',
+        tipo_contrato: 'Contratado',
         civil: 'Soltero/a',
         comuna_id: '',
         email: '',
@@ -229,6 +228,7 @@ const Guardias = () => {
                 ...guard,
                 // Mapeo de campos si es necesario (ej. si el backend devuelve null)
                 nacimiento: isoToDisplayDate(guard.nacimiento) || '',
+                tipo_contrato: guard.tipo_contrato || 'Contratado',
                 email: guard.email || '',
                 nombre_emergencia: guard.nombre_emergencia || '',
                 fono_emergencia: guard.fono_emergencia || '',
@@ -819,6 +819,16 @@ const Guardias = () => {
                                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
                                             >
                                                 <option>Soltero/a</option><option>Casado/a</option><option>Divorciado/a</option>
+                                            </select>
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1 mt-3 block">Tipo de Contrato</label>
+                                            <select 
+                                                name="tipo_contrato"
+                                                value={formData.tipo_contrato}
+                                                onChange={handleChange}
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black mt-1"
+                                            >
+                                                <option value="Contratado">Contratado</option>
+                                                <option value="Partime">Partime</option>
                                             </select>
                                         </div>
                                     </div>

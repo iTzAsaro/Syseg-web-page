@@ -1,16 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AuthService from '../services/authService';
-
-const AuthContext = createContext();
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth debe ser usado dentro de un AuthProvider');
-    }
-    return context;
-};
+import { AuthContext } from './useAuth';
 
 export const AuthProvider = ({ children }) => {
     // 1. Inicializar estado desde localStorage para persistencia inmediata

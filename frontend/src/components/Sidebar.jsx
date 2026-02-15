@@ -4,7 +4,7 @@ import {
   Home, Box, Users, FileText, Settings, LogOut, 
   ShieldCheck, FileSpreadsheet, UserX, X
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();

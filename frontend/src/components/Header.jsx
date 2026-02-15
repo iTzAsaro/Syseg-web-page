@@ -1,7 +1,7 @@
 import React from 'react';
 import { Menu, Bell, ShoppingCart } from 'lucide-react';
-import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/useCart';
+import { useAuth } from '../context/useAuth';
 
 const Header = ({ onMenuClick }) => {
   const { getCartCount, toggleCart } = useCart();
