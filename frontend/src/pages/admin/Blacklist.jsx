@@ -53,7 +53,7 @@ export default function Blacklist() {
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 12;
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -232,7 +232,7 @@ export default function Blacklist() {
                 </h2>
                 <p className="text-gray-500 mt-1 text-sm">Gestión de personal bloqueado</p>
             </div>
-            <RequirePermission permission="GESTIONAR_BLACKLIST">
+            <RequirePermission permission="CREAR_BLACKLIST">
                 <button 
                     onClick={() => handleOpenModal()} 
                     className="w-full md:w-auto bg-red-600 text-white px-6 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-xl hover:bg-red-700 active:scale-95 transition-transform"
@@ -267,104 +267,83 @@ export default function Blacklist() {
             </div>
         </div>
 
-        {/* Tabla Responsive */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                    <thead>
-                        <tr className="bg-gray-50/50 border-b border-gray-100">
-                            <th className="px-6 py-4 font-bold text-gray-900">Nombre Completo</th>
-                            <th className="px-6 py-4 font-bold text-gray-900">RUT</th>
-                            <th className="px-6 py-4 font-bold text-gray-900">Motivo / Recinto</th>
-                            <th className="px-6 py-4 font-bold text-gray-900 text-center">Fechas</th>
-                            <th className="px-6 py-4 font-bold text-gray-900 text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {currentItems.length > 0 ? (
-                            currentItems.map(record => (
-                                <tr key={record.id} className="hover:bg-red-50/10 transition-colors group">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600 font-bold text-sm shadow-sm shrink-0">
-                                                <UserX className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-gray-900">{record.nombre}</h4>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 font-mono text-gray-600">
-                                        {record.rut}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="space-y-1">
-                                            <p className="font-medium text-gray-900 line-clamp-1" title={record.motivo}>
-                                                {record.motivo}
-                                            </p>
-                                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                                <Store className="w-3 h-3" />
-                                                <span className="truncate max-w-[200px]">{record.recintos || 'No especificado'}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col gap-1 items-center">
-                                            <div className="flex items-center gap-1.5 text-xs bg-red-50 text-red-700 px-2 py-1 rounded border border-red-100 font-bold">
-                                                <Ban className="w-3 h-3" />
-                                                {record.fecha_bloqueo}
-                                            </div>
-                                            {record.fecha_ingreso && (
-                                                <span className="text-[10px] text-gray-400">
-                                                    Ingreso: {record.fecha_ingreso}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <RequirePermission permission="GESTIONAR_BLACKLIST">
-                                                <button 
-                                                    onClick={() => handleOpenModal(record)} 
-                                                    className="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
-                                                    title="Editar"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                </button>
-                                            </RequirePermission>
-                                            <RequirePermission permission="GESTIONAR_BLACKLIST">
-                                                <button 
-                                                    onClick={() => handleDelete(record.id)} 
-                                                    className="p-2 bg-white border border-gray-200 text-gray-400 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm"
-                                                    title="Eliminar"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </RequirePermission>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                                    <div className="flex flex-col items-center gap-3">
-                                        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
-                                            <Search className="w-6 h-6 text-gray-300" />
-                                        </div>
-                                        <p className="font-medium">No se encontraron resultados</p>
-                                        <p className="text-xs text-gray-400">Intente con otro término de búsqueda</p>
+        {/* Tarjetas */}
+        <div className="space-y-4">
+            {currentItems.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {currentItems.map(record => (
+                        <div key={record.id} className="group bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col h-full">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600 font-bold text-sm shadow-sm shrink-0">
+                                        <UserX className="w-5 h-5" />
                                     </div>
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 uppercase leading-tight">{record.nombre}</h4>
+                                        <div className="font-mono text-xs text-gray-500 mt-0.5">{record.rut}</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-end gap-2">
+                                    <RequirePermission permission="EDITAR_BLACKLIST">
+                                        <button 
+                                            onClick={() => handleOpenModal(record)} 
+                                            className="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+                                            title="Editar"
+                                        >
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                    </RequirePermission>
+                                    <RequirePermission permission="ELIMINAR_BLACKLIST">
+                                        <button 
+                                            onClick={() => handleDelete(record.id)} 
+                                            className="p-2 bg-white border border-gray-200 text-gray-400 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm"
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </RequirePermission>
+                                </div>
+                            </div>
+                            <div className="space-y-2 flex-1 mt-4">
+                                <p className="text-sm text-gray-900 line-clamp-2 min-h-[42px]" title={record.motivo}>
+                                    {record.motivo}
+                                </p>
+                                <div className="flex items-center gap-1.5 text-xs text-gray-500 min-h-[20px]">
+                                    <Store className="w-3 h-3" />
+                                    <span className="truncate max-w-[200px]">{record.recintos || 'No especificado'}</span>
+                                </div>
+                                <div className="text-[10px] text-gray-400">
+                                    Agregado por: <span className="font-semibold text-gray-500">{record.agregado_por || '—'}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 mt-4">
+                                <div className="flex items-center gap-1.5 text-xs bg-red-50 text-red-700 px-2 py-1 rounded border border-red-100 font-bold">
+                                    <Ban className="w-3 h-3" />
+                                    {record.fecha_bloqueo}
+                                </div>
+                                {record.fecha_ingreso && (
+                                    <span className="text-[10px] text-gray-400">
+                                        Ingreso: {record.fecha_ingreso}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
+                            <Search className="w-6 h-6 text-gray-300" />
+                        </div>
+                        <p className="font-medium">No se encontraron resultados</p>
+                        <p className="text-xs text-gray-400">Intente con otro término de búsqueda</p>
+                    </div>
+                </div>
+            )}
 
-            {/* Paginación */}
             {totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/30">
+                <div className="px-2 sm:px-0 flex items-center justify-between">
                     <span className="text-xs text-gray-500 font-medium">
                         Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, filteredBlacklist.length)} - {Math.min(currentPage * itemsPerPage, filteredBlacklist.length)} de {filteredBlacklist.length} registros
                     </span>

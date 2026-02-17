@@ -31,6 +31,14 @@ const Blacklist = sequelize.define('Blacklist', {
     motivo: {
         type: DataTypes.TEXT,
         allowNull: false
+    },
+    agregado_por: {
+        type: DataTypes.STRING(150),
+        allowNull: false
+    },
+    agregado_por_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 }, {
     tableName: 'blacklist',

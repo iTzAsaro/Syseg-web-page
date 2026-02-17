@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
     UserPlus, Search, Edit, Trash2, Shield, Check, X, Lock, RefreshCw 
 } from 'lucide-react';
@@ -7,6 +7,45 @@ import usuarioService from '../../services/usuarioService';
 import regionService from '../../services/regionService';
 import RequirePermission from '../../components/RequirePermission';
 import Swal from 'sweetalert2';
+
+const categoriaPermisoPorCodigo = {
+    VER_USUARIOS: 'Gestión de Usuarios',
+    CREAR_USUARIO: 'Gestión de Usuarios',
+    EDITAR_USUARIO: 'Gestión de Usuarios',
+    ELIMINAR_USUARIO: 'Gestión de Usuarios',
+    GESTIONAR_PERMISOS: 'Gestión de Usuarios',
+    VER_GUARDIAS: 'Guardias',
+    CREAR_GUARDIA: 'Guardias',
+    EDITAR_GUARDIA: 'Guardias',
+    ELIMINAR_GUARDIA: 'Guardias',
+    VER_INVENTARIO: 'Inventario',
+    CREAR_PRODUCTO: 'Inventario',
+    EDITAR_PRODUCTO: 'Inventario',
+    ELIMINAR_PRODUCTO: 'Inventario',
+    AJUSTAR_STOCK: 'Inventario',
+    VER_REPORTES: 'Reportes',
+    VER_BITACORA: 'Bitácora',
+    CREAR_BITACORA: 'Bitácora',
+    VER_BLACKLIST: 'Blacklist',
+    CREAR_BLACKLIST: 'Blacklist',
+    EDITAR_BLACKLIST: 'Blacklist',
+    ELIMINAR_BLACKLIST: 'Blacklist',
+    CREAR_ASIGNACION: 'Asignaciones',
+    VER_ASIGNACIONES: 'Asignaciones',
+    ELIMINAR_ASIGNACION: 'Asignaciones'
+};
+
+const ordenCategorias = [
+    'Gestión de Usuarios',
+    'Guardias',
+    'Inventario',
+    'Asignaciones',
+    'Reportes',
+    'Bitácora',
+    'Blacklist',
+    'Configuración',
+    'Otros'
+];
 
 const Usuarios = () => {
     const [usuarios, setUsuarios] = useState([]);
@@ -38,6 +77,21 @@ const Usuarios = () => {
     };
     const [formData, setFormData] = useState(initialFormState);
     const [selectedPermisos, setSelectedPermisos] = useState([]);
+
+    const permisosAgrupados = useMemo(() => {
+        const grupos = {};
+        const permisosFiltrados = allPermisos.filter(
+            (permiso) => permiso.codigo !== 'GESTIONAR_BLACKLIST'
+        );
+        permisosFiltrados.forEach((permiso) => {
+            const categoria = categoriaPermisoPorCodigo[permiso.codigo] || 'Otros';
+            if (!grupos[categoria]) {
+                grupos[categoria] = [];
+            }
+            grupos[categoria].push(permiso);
+        });
+        return grupos;
+    }, [allPermisos]);
 
     useEffect(() => {
         fetchMetadata();
@@ -572,29 +626,46 @@ const Usuarios = () => {
                                 Selecciona los permisos adicionales para este usuario. Los permisos definidos por el Rol no se pueden quitar aquí.
                             </p>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {allPermisos.map(permiso => (
-                                    <div 
-                                        key={permiso.id} 
-                                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                                            selectedPermisos.includes(permiso.id) 
-                                                ? 'bg-blue-50 border-blue-500' 
-                                                : 'hover:bg-gray-50 border-gray-200'
-                                        }`}
-                                        onClick={() => handlePermisoToggle(permiso.id)}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-5 h-5 rounded border flex items-center justify-center ${
-                                                selectedPermisos.includes(permiso.id)
-                                                    ? 'bg-blue-600 border-blue-600'
-                                                    : 'border-gray-300'
-                                            }`}>
-                                                {selectedPermisos.includes(permiso.id) && <Check size={14} className="text-white" />}
+                            <div className="space-y-5">
+                                {ordenCategorias
+                                    .filter((categoria) => permisosAgrupados[categoria] && permisosAgrupados[categoria].length > 0)
+                                    .map((categoria) => (
+                                        <div key={categoria}>
+                                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                                {categoria}
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {permisosAgrupados[categoria].map((permiso) => (
+                                                    <div
+                                                        key={permiso.id}
+                                                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                                            selectedPermisos.includes(permiso.id)
+                                                                ? 'bg-blue-50 border-blue-500'
+                                                                : 'hover:bg-gray-50 border-gray-200'
+                                                        }`}
+                                                        onClick={() => handlePermisoToggle(permiso.id)}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div
+                                                                className={`w-5 h-5 rounded border flex items-center justify-center ${
+                                                                    selectedPermisos.includes(permiso.id)
+                                                                        ? 'bg-blue-600 border-blue-600'
+                                                                        : 'border-gray-300'
+                                                                }`}
+                                                            >
+                                                                {selectedPermisos.includes(permiso.id) && (
+                                                                    <Check size={14} className="text-white" />
+                                                                )}
+                                                            </div>
+                                                            <span className="text-sm font-medium text-gray-700">
+                                                                {permiso.descripcion || permiso.codigo}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <span className="text-sm font-medium text-gray-700">{permiso.descripcion || permiso.codigo}</span>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
                             </div>
                         </div>
 
