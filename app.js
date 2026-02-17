@@ -31,6 +31,7 @@ require('./routes/categoriaRoutes')(app);
 require('./routes/entregaEppRoutes')(app);
 require('./routes/regionRoutes')(app);
 require('./routes/comunaRoutes')(app);
+require('./routes/reporteOperativoRoutes')(app);
 
 // Ruta de vida del servidor
 app.get('/', (req, res) => {

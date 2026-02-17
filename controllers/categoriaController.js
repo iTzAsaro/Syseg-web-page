@@ -1,4 +1,4 @@
-const { Categoria } = require('../models');
+const { Categoria, Producto } = require('../models');
 
 exports.getAll = async (req, res) => {
     try {
@@ -18,6 +18,25 @@ exports.create = async (req, res) => {
         
         const nuevaCategoria = await Categoria.create({ nombre });
         res.status(201).json(nuevaCategoria);
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+};
+
+exports.delete = async (req, res) => {
+    try {
+        const id = req.params.id;
+        await Producto.update(
+            { categoria_id: null },
+            { where: { categoria_id: id } }
+        );
+        const deleted = await Categoria.destroy({
+            where: { id }
+        });
+        if (deleted) {
+            return res.status(204).send();
+        }
+        return res.status(404).send({ message: "Categoría no encontrada." });
     } catch (error) {
         res.status(500).send({ message: error.message });
     }

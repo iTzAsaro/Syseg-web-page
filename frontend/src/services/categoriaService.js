@@ -8,6 +8,10 @@ const categoriaService = {
     create: async (data) => {
         const response = await api.post('/categorias', data);
         return response.data;
+    },
+    delete: async (id) => {
+        const response = await api.delete(`/categorias/${id}`);
+        return response.data;
     }
 };
 

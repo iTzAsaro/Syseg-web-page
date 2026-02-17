@@ -24,6 +24,7 @@ const Blacklist = require('./Blacklist');
 const Auditoria = require('./Auditoria');
 const EntregaEpp = require('./EntregaEpp');
 const DetalleEntregaEpp = require('./DetalleEntregaEpp');
+const ReporteOperativo = require('./ReporteOperativo');
 
 // Asociaciones
 
@@ -118,6 +119,10 @@ EntregaEpp.hasMany(DetalleEntregaEpp, { foreignKey: 'entrega_id' });
 DetalleEntregaEpp.belongsTo(EntregaEpp, { foreignKey: 'entrega_id' });
 DetalleEntregaEpp.belongsTo(Producto, { foreignKey: 'producto_id' });
 
+// Reporte Operativo Relaciones
+ReporteOperativo.belongsTo(Guardia, { foreignKey: 'guardia_id' });
+ReporteOperativo.belongsTo(Usuario, { foreignKey: 'usuario_id' });
+
 module.exports = {
     sequelize,
     Rol,
@@ -143,5 +148,6 @@ module.exports = {
     Blacklist,
     Auditoria,
     EntregaEpp,
-    DetalleEntregaEpp
+    DetalleEntregaEpp,
+    ReporteOperativo
 };

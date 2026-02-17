@@ -124,11 +124,37 @@ const Inventario = () => {
       try {
           await categoriaService.create(categoryData);
           Swal.fire('Creado', 'Categoría creada correctamente.', 'success');
-          fetchData(); // Recargar categorías y productos
+          fetchData();
           setIsCategoryModalOpen(false);
       } catch (error) {
           console.error("Error guardando categoría:", error);
           Swal.fire('Error', 'No se pudo guardar la categoría.', 'error');
+      }
+  };
+
+  const handleDeleteCategory = async (id) => {
+      const result = await Swal.fire({
+          title: '¿Eliminar categoría?',
+          text: 'Esta acción no se puede deshacer.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar'
+      });
+
+      if (!result.isConfirmed) {
+          return;
+      }
+
+      try {
+          await categoriaService.delete(id);
+          Swal.fire('Eliminada', 'Categoría eliminada correctamente.', 'success');
+          fetchData();
+      } catch (error) {
+          console.error("Error eliminando categoría:", error);
+          Swal.fire('Error', 'No se pudo eliminar la categoría.', 'error');
       }
   };
 
@@ -168,6 +194,8 @@ const Inventario = () => {
             isOpen={isCategoryModalOpen}
             onClose={() => setIsCategoryModalOpen(false)}
             onSave={handleSaveCategory}
+            categories={categories}
+            onDeleteCategory={handleDeleteCategory}
         />
 
         {/* Header Inventario */}
@@ -183,7 +211,7 @@ const Inventario = () => {
                       className="bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm flex items-center justify-center gap-2"
                   >
                       <Tag className="w-4 h-4" />
-                      Agregar Categoría
+                      Gestionar Categorías
                   </button>
               </RequirePermission>
               <RequirePermission permission="CREAR_PRODUCTO">

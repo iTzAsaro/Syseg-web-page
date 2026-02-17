@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  FileText, LogOut, User, ChevronLeft, ChevronRight, 
-  Eye, CheckCircle, AlertTriangle, Shield, Menu, X,
+  FileText, LogOut, User, ChevronLeft, ChevronRight, ChevronDown,
+  Eye, CheckCircle, AlertTriangle, Shield, Menu, X, Store,
   Search, Bell, Banknote, Download, Construction
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import api from '../../api/axios';
+import { crearReporteOperativo } from '../../services/reporteOperativoService';
+import GuardSidebar from '../../components/GuardSidebar';
 
 // Estilos personalizados inyectados
 const CustomStyles = () => (
@@ -70,6 +72,16 @@ const DashboardGuardia = () => {
   const [irlPage, setIrlPage] = useState(1);
   const [viewMode, setViewMode] = useState('paginated'); // paginated, scroll
   const [showModal, setShowModal] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem('guardSidebarOpen');
+    if (stored === null) return true;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return true;
+    }
+  });
   const [docsStatus, setDocsStatus] = useState({
     ficha: 'pending',
     irl: 'pending',
@@ -77,7 +89,8 @@ const DashboardGuardia = () => {
     pactoHoras: 'pending',
     actaDeberes: 'pending',
     entregaEpp: 'pending',
-    liquidaciones: 'pending'
+    liquidaciones: 'pending',
+    procedimientos: 'pending'
   });
   
   // Estado para formulario EPP
@@ -108,6 +121,18 @@ const DashboardGuardia = () => {
 
   const [externalHtml, setExternalHtml] = useState(null);
   const [isLoadingExternal, setIsLoadingExternal] = useState(false);
+  const [procedimientosForm, setProcedimientosForm] = useState({
+    tipo_incidente: '',
+    nivel_riesgo: '',
+    fecha_evento: new Date().toISOString().split('T')[0],
+    hora_evento: '',
+    duracion_estimada: '',
+    lugar: '',
+    descripcion: '',
+    funcionario_cargo: '',
+    aviso_central: '',
+    aviso_jefatura: ''
+  });
   
   // Canvas Refs
   const canvasRef = useRef(null);
@@ -203,6 +228,11 @@ const DashboardGuardia = () => {
 
       fetchDraftEntrega();
   }, [currentView, user]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('guardSidebarOpen', JSON.stringify(isSidebarOpen));
+  }, [isSidebarOpen]);
 
   // --- Funciones de Navegación ---
   const handleViewChange = (view) => {
@@ -317,6 +347,29 @@ const DashboardGuardia = () => {
   const finalizeDocument = () => {
     setDocsStatus(prev => ({ ...prev, [currentView]: 'completed' }));
     setShowModal(true);
+  };
+
+  const handleProcedimientosChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    let newValue = value;
+    if (type === 'radio') {
+      newValue = checked ? value : procedimientosForm[name];
+    }
+    setProcedimientosForm(prev => ({ ...prev, [name]: newValue }));
+  };
+
+  const handleProcedimientosSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await crearReporteOperativo({
+        ...procedimientosForm
+      });
+      finalizeDocument();
+    } catch (error) {
+      console.error('Error creando reporte operativo:', error);
+      const msg = error.response?.data?.message || 'No se pudo registrar el procedimiento.';
+      alert(msg);
+    }
   };
 
   const closeModal = () => {
@@ -706,38 +759,28 @@ const DashboardGuardia = () => {
   return (
     <div className="bg-gray-900 text-gray-100 h-screen w-full flex overflow-hidden font-sans">
       <CustomStyles />
-      
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col h-full shrink-0 z-20 shadow-xl hidden md:flex">
-        <div className="h-16 flex items-center px-6 border-b border-gray-800 bg-gray-900/50 backdrop-blur">
-            <div className="flex items-center gap-3">
-                <div className="bg-red-600 w-8 h-8 rounded flex items-center justify-center text-white font-bold shadow-[0_0_10px_rgba(220,38,38,0.5)]">S</div>
-                <div className="flex flex-col">
-                    <span className="text-white font-bold text-sm tracking-widest uppercase leading-none">Syseg</span>
-                    <span className="text-gray-500 text-[10px] uppercase font-medium">Guardia</span>
-                </div>
-            </div>
-        </div>
-        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-            <p className="px-3 text-xs text-gray-600 uppercase tracking-wider font-semibold mb-2">Principal</p>
-            <button onClick={() => handleViewChange('list')} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 shadow-sm mt-2">
-                <FileText className="w-5 h-5 text-red-500" />
-                <span className="text-sm font-medium">Documentación</span>
-            </button>
-        </nav>
-        <div className="p-4 border-t border-gray-800">
-            <Link to="/" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm">
-                <LogOut className="w-4 h-4" /> Cerrar Sesión
-            </Link>
-        </div>
-      </aside>
+      <GuardSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        currentView={currentView}
+        onSelectView={setCurrentView}
+      />
 
       {/* AREA PRINCIPAL */}
-      <main className="flex-1 relative flex flex-col min-w-0 bg-black/20">
+      <main className="flex-1 relative flex flex-col min-w-0 bg-black/20 md:ml-64">
         <div className="absolute inset-0 bg-[radial-gradient(#374151_1px,transparent_1px)] [background-size:20px_20px] opacity-5 pointer-events-none"></div>
 
         <header className="h-16 border-b border-gray-800 flex items-center justify-between px-4 sm:px-8 bg-gray-900/80 backdrop-blur shrink-0 z-10">
-            <h2 className="text-lg font-bold text-gray-200 flex items-center gap-2">
+            <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-gray-700 bg-gray-900 text-gray-300 hover:bg-gray-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                  onClick={() => setIsSidebarOpen(true)}
+                  aria-label="Abrir menú lateral"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <h2 className="text-lg font-bold text-gray-200 flex items-center gap-2">
                 {currentView === 'list' ? (
                     <><span className="text-red-600">Sistema</span> / Documentación</>
                 ) : (
@@ -747,10 +790,12 @@ const DashboardGuardia = () => {
                         currentView === 'entregaEpp' ? 'Entrega de EPP' :
                         currentView === 'actaDeberes' ? 'Acta Deberes' :
                         currentView === 'pactoHoras' ? 'Pacto Horas Extras' :
+                        currentView === 'procedimientos' ? 'Reporte Operativo' :
                         'Reglamento Interno'
                     }</>
                 )}
-            </h2>
+                </h2>
+            </div>
             <div className="flex items-center gap-3 pl-6 border-l border-gray-800 h-10">
                 {user && (
                     <div className="flex flex-col items-end mr-1 hidden sm:flex">
@@ -866,6 +911,20 @@ const DashboardGuardia = () => {
                                 </span>
                                 <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Acta Deberes y Obligaciones</h4>
                                 <p className="text-gray-400 text-xs mt-2 leading-relaxed">Notificación oficial de deberes y obligaciones del guardia.</p>
+                            </div>
+                        </div>
+
+                        {/* Reporte Operativo Card */}
+                        <div onClick={() => handleViewChange('procedimientos')} className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:bg-gray-750 hover:border-blue-500/50 cursor-pointer transition-all group relative overflow-hidden shadow-lg">
+                             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <AlertTriangle className="w-24 h-24 text-blue-500 transform rotate-6" />
+                            </div>
+                             <div className="relative z-10">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-4 border ${docsStatus.procedimientos === 'completed' ? 'bg-green-900/30 text-green-400 border-green-900/50' : 'bg-yellow-900/30 text-yellow-500 border-yellow-900/50'}`}>
+                                    {docsStatus.procedimientos === 'completed' ? 'Registrado' : 'Pendiente'}
+                                </span>
+                                <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Reporte Operativo</h4>
+                                <p className="text-gray-400 text-xs mt-2 leading-relaxed">Registro estructurado de incidentes y procedimientos realizados en terreno.</p>
                             </div>
                         </div>
 
@@ -1399,6 +1458,280 @@ const DashboardGuardia = () => {
                 </div>
             )}
 
+            {/* VISTA: PROCEDIMIENTOS / REPORTE OPERATIVO */}
+            {currentView === 'procedimientos' && (
+                <div className="fade-in max-w-5xl mx-auto">
+                     <div className="flex justify-between items-center mb-6">
+                         <button
+                           onClick={() => handleViewChange('list')}
+                           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg border border-gray-700 text-sm"
+                         >
+                             <ChevronLeft className="w-4 h-4" /> Volver
+                         </button>
+                         <div className="flex items-center gap-3">
+                             <span className={`px-3 py-1 rounded text-xs uppercase font-bold tracking-wider border flex items-center gap-2 ${
+                               docsStatus.procedimientos === 'completed'
+                                 ? 'bg-green-900/20 text-green-500 border-green-900/50'
+                                 : 'bg-yellow-900/20 text-yellow-400 border-yellow-900/50'
+                             }`}>
+                                 <AlertTriangle className="w-4 h-4" />
+                                 {docsStatus.procedimientos === 'completed' ? 'Reporte Registrado' : 'Borrador en Proceso'}
+                             </span>
+                         </div>
+                     </div>
+
+                     <form
+                       onSubmit={handleProcedimientosSubmit}
+                       className="rounded-2xl border border-slate-700/50 overflow-hidden shadow-2xl bg-slate-900/60 backdrop-blur p-0"
+                     >
+                          <div className="h-1.5 md:h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600"></div>
+                          <div className="p-6 md:p-8 space-y-8">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 border-b border-slate-800 pb-6 md:pb-8">
+                              <div className="flex items-center gap-4 md:gap-5">
+                                  <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white shadow-[0_0_20px_-5px_rgba(59,130,246,0.3)] flex-shrink-0">
+                                      <Shield className="text-xl md:text-2xl w-6 h-6" />
+                                  </div>
+                                  <div>
+                                      <h2 className="text-xl md:text-2xl font-bold text-white">Reporte Operativo</h2>
+                                      <p className="text-sm text-slate-400 mt-1">Nuevo registro de incidente.</p>
+                                  </div>
+                              </div>
+                              <div className="text-left md:text-right hidden md:block">
+                                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">ID Referencia</span>
+                                  <span className="block text-xl font-mono text-blue-400">#PROC-2023-889</span>
+                              </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+                              <div className="lg:col-span-4">
+                                  <h3 className="text-base md:text-lg font-bold text-white mb-2">Contexto del Evento</h3>
+                                  <p className="text-sm text-gray-400 leading-relaxed">
+                                      Complete la siguiente información para documentar de manera clara y trazable el incidente o procedimiento realizado.
+                                  </p>
+                              </div>
+                              <div className="lg:col-span-8 space-y-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                          <label className="form-label">Tipo de incidente</label>
+                                          <select
+                                            name="tipo_incidente"
+                                            className="form-input bg-gray-900/60"
+                                            value={procedimientosForm.tipo_incidente}
+                                            onChange={handleProcedimientosChange}
+                                            disabled={docsStatus.procedimientos === 'completed'}
+                                          >
+                                              <option value="">Seleccione una opción</option>
+                                              <option value="acceso_no_autorizado">Acceso no autorizado</option>
+                                              <option value="danos_propiedad">Daños a la propiedad</option>
+                                              <option value="emergencia_medica">Emergencia médica</option>
+                                              <option value="riesgo_operacional">Riesgo operacional</option>
+                                              <option value="otro">Otro</option>
+                                          </select>
+                                      </div>
+                                      <div>
+                                          <label className="form-label">Nivel de riesgo</label>
+                                          <select
+                                            name="nivel_riesgo"
+                                            className="form-input bg-gray-900/60"
+                                            value={procedimientosForm.nivel_riesgo}
+                                            onChange={handleProcedimientosChange}
+                                            disabled={docsStatus.procedimientos === 'completed'}
+                                          >
+                                              <option value="">Seleccione</option>
+                                              <option value="bajo">Bajo</option>
+                                              <option value="medio">Medio</option>
+                                              <option value="alto">Alto</option>
+                                          </select>
+                                      </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                      <div>
+                                          <label className="form-label">Fecha del evento</label>
+                                          <input
+                                            type="date"
+                                            name="fecha_evento"
+                                            className="form-input"
+                                            value={procedimientosForm.fecha_evento}
+                                            onChange={handleProcedimientosChange}
+                                            disabled={docsStatus.procedimientos === 'completed'}
+                                          />
+                                      </div>
+                                      <div>
+                                          <label className="form-label">Hora aproximada</label>
+                                          <input
+                                            type="time"
+                                            name="hora_evento"
+                                            className="form-input"
+                                            value={procedimientosForm.hora_evento}
+                                            onChange={handleProcedimientosChange}
+                                            disabled={docsStatus.procedimientos === 'completed'}
+                                          />
+                                      </div>
+                                      <div>
+                                          <label className="form-label">Duración estimada</label>
+                                          <input
+                                            type="text"
+                                            name="duracion_estimada"
+                                            className="form-input"
+                                            placeholder="Ej: 15 minutos"
+                                            value={procedimientosForm.duracion_estimada}
+                                            onChange={handleProcedimientosChange}
+                                            disabled={docsStatus.procedimientos === 'completed'}
+                                          />
+                                      </div>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Instalación <span className="text-red-500">*</span></label>
+                                      <div className="relative">
+                                          <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4 pointer-events-none" />
+                                          <select
+                                            name="lugar"
+                                            className="w-full bg-gray-900/60 border border-slate-700 rounded-xl py-3.5 md:py-3 pl-10 pr-9 text-base md:text-sm text-white appearance-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                            value={procedimientosForm.lugar}
+                                            onChange={handleProcedimientosChange}
+                                            disabled={docsStatus.procedimientos === 'completed'}
+                                          >
+                                              <option value="" disabled>Seleccionar Tienda...</option>
+                                              <option value="Tienda Central">Tienda Central</option>
+                                              <option value="Mall Plaza Norte">Mall Plaza Norte</option>
+                                          </select>
+                                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 w-4 h-4 pointer-events-none" />
+                                      </div>
+                                  </div>
+
+                                  <div>
+                                      <label className="form-label">Descripción del incidente y acciones realizadas</label>
+                                      <textarea
+                                        rows={4}
+                                        name="descripcion"
+                                        className="form-input min-h-[120px]"
+                                        placeholder="Describa de forma clara lo ocurrido, las personas involucradas y las acciones realizadas por el equipo de seguridad."
+                                        value={procedimientosForm.descripcion}
+                                        onChange={handleProcedimientosChange}
+                                        disabled={docsStatus.procedimientos === 'completed'}
+                                      />
+                                  </div>
+                              </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+                              <div className="lg:col-span-4">
+                                  <h3 className="text-base md:text-lg font-bold text-white mb-2">Protocolos Activados</h3>
+                                  <p className="text-sm text-gray-400 leading-relaxed">
+                                      Registre las comunicaciones realizadas y la activación de la cadena de mando según el procedimiento estándar.
+                                  </p>
+                              </div>
+                              <div className="lg:col-span-8 space-y-6">
+                                  <div>
+                                      <label className="form-label">Funcionario a cargo</label>
+                                      <input
+                                        type="text"
+                                        name="funcionario_cargo"
+                                        className="form-input"
+                                        placeholder="Nombre completo del guardia responsable del procedimiento"
+                                        value={procedimientosForm.funcionario_cargo}
+                                        onChange={handleProcedimientosChange}
+                                        disabled={docsStatus.procedimientos === 'completed'}
+                                      />
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                      <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-700">
+                                          <p className="text-sm font-bold text-slate-300 mb-3">¿Aviso a Central? <span className="text-red-500">*</span></p>
+                                          <div className="flex gap-3">
+                                              <label className="flex-1 cursor-pointer">
+                                                  <input
+                                                    type="radio"
+                                                    name="aviso_central"
+                                                    value="si"
+                                                    className="peer sr-only"
+                                                    checked={procedimientosForm.aviso_central === 'si'}
+                                                    onChange={handleProcedimientosChange}
+                                                    disabled={docsStatus.procedimientos === 'completed'}
+                                                  />
+                                                  <div className="text-center py-3 md:py-2 rounded-lg border border-slate-600 text-slate-400 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-500 transition-all text-sm font-medium hover:bg-slate-700 active:scale-95">
+                                                      Sí
+                                                  </div>
+                                              </label>
+                                              <label className="flex-1 cursor-pointer">
+                                                  <input
+                                                    type="radio"
+                                                    name="aviso_central"
+                                                    value="no"
+                                                    className="peer sr-only"
+                                                    checked={procedimientosForm.aviso_central === 'no'}
+                                                    onChange={handleProcedimientosChange}
+                                                    disabled={docsStatus.procedimientos === 'completed'}
+                                                  />
+                                                  <div className="text-center py-3 md:py-2 rounded-lg border border-slate-600 text-slate-400 peer-checked:bg-slate-600 peer-checked:text-white transition-all text-sm font-medium hover:bg-slate-700 active:scale-95">
+                                                      No
+                                                  </div>
+                                              </label>
+                                          </div>
+                                      </div>
+
+                                      <div className="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
+                                          <p className="text-sm font-bold text-slate-300 mb-3">¿Aviso a Jefatura? <span className="text-red-500">*</span></p>
+                                          <div className="flex gap-3">
+                                              <label className="flex-1 cursor-pointer">
+                                                  <input
+                                                    type="radio"
+                                                    name="aviso_jefatura"
+                                                    value="si"
+                                                    className="peer sr-only"
+                                                    checked={procedimientosForm.aviso_jefatura === 'si'}
+                                                    onChange={handleProcedimientosChange}
+                                                    disabled={docsStatus.procedimientos === 'completed'}
+                                                  />
+                                                  <div className="text-center py-3 md:py-2 rounded-lg border border-slate-600 text-slate-400 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-500 transition-all text-sm font-medium hover:bg-slate-700 active:scale-95">
+                                                      Sí
+                                                  </div>
+                                              </label>
+                                              <label className="flex-1 cursor-pointer">
+                                                  <input
+                                                    type="radio"
+                                                    name="aviso_jefatura"
+                                                    value="no"
+                                                    className="peer sr-only"
+                                                    checked={procedimientosForm.aviso_jefatura === 'no'}
+                                                    onChange={handleProcedimientosChange}
+                                                    disabled={docsStatus.procedimientos === 'completed'}
+                                                  />
+                                                  <div className="text-center py-3 md:py-2 rounded-lg border border-slate-600 text-slate-400 peer-checked:bg-slate-600 peer-checked:text-white transition-all text-sm font-medium hover:bg-slate-700 active:scale-95">
+                                                      No
+                                                  </div>
+                                              </label>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <div className="pt-6 flex flex-col-reverse md:flex-row justify-end gap-3 md:gap-4 border-t border-gray-700">
+                              <button
+                                type="button"
+                                onClick={() => handleViewChange('list')}
+                                className="w-full md:w-auto px-6 py-3 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 font-bold text-sm transition-all"
+                              >
+                                  Cancelar
+                              </button>
+                              {docsStatus.procedimientos !== 'completed' && (
+                                <button
+                                  type="submit"
+                                  className="w-full md:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-900/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <span>Registrar Procedimiento</span>
+                                    <AlertTriangle className="w-4 h-4" />
+                                </button>
+                              )}
+                          </div>
+                          </div>
+                     </form>
+                </div>
+            )}
+           
             {/* VISTA 7: ACTA DEBERES (PDF + FIRMA) */}
             {currentView === 'actaDeberes' && (
                 <div className="fade-in max-w-4xl mx-auto">
