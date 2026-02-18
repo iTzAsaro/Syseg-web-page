@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
-    UserPlus, Search, Edit, Trash2, Shield, Check, X, Lock, RefreshCw 
+    UserPlus, Search, Edit, Trash2, Shield, Check, X, Lock, RefreshCw, User, Mail, Phone 
 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import usuarioService from '../../services/usuarioService';
@@ -309,126 +309,156 @@ const Usuarios = () => {
             </div>
 
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
-                                <th className="p-4 border-b">Usuario</th>
-                                <th className="p-4 border-b">Rol</th>
-                                <th className="p-4 border-b">Zonas</th>
-                                <th className="p-4 border-b">Estado</th>
-                                <th className="p-4 border-b">Permisos</th>
-                                <th className="p-4 border-b text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="5" className="p-8 text-center text-gray-500">
-                                        Cargando usuarios...
-                                    </td>
-                                </tr>
-                            ) : usuarios.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="p-8 text-center text-gray-500">
-                                        No se encontraron usuarios.
-                                    </td>
-                                </tr>
-                            ) : (
-                                usuarios.map((user) => (
-                                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="p-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-medium text-gray-900">{user.nombre}</span>
-                                                <span className="text-sm text-gray-500">{user.email}</span>
+                {loading ? (
+                    <div className="p-8 text-center text-gray-500">
+                        Cargando usuarios...
+                    </div>
+                ) : usuarios.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                        No se encontraron usuarios.
+                    </div>
+                ) : (
+                    <div 
+                        className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+                        role="list"
+                        aria-label="Listado de usuarios"
+                    >
+                        {usuarios.map((user) => (
+                            <article
+                                key={user.id}
+                                role="group"
+                                aria-label={`Usuario ${user.nombre}`}
+                                className="group bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-full overflow-hidden transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg hover:border-slate-300"
+                            >
+                                <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 bg-slate-50/60 border-b border-slate-100">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 flex items-center justify-center text-white shadow-md shadow-slate-900/30">
+                                            <User className="w-5 h-5" aria-hidden="true" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="text-sm font-semibold text-gray-900 leading-snug truncate">
+                                                {user.nombre}
+                                            </h3>
+                                            <div className="flex items-center gap-1 text-[11px] text-gray-500 mt-0.5">
+                                                <Mail className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                                <span className="truncate">{user.email}</span>
                                             </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                                                {getRoleName(user.rol_id)}
-                                            </span>
-                                        </td>
-                                        <td className="p-4">
+                                        </div>
+                                    </div>
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-600/10 text-blue-700 border border-blue-600/30 whitespace-nowrap">
+                                        {getRoleName(user.rol_id)}
+                                    </span>
+                                </div>
+
+                                <div className="px-4 pb-3 pt-2 space-y-3 text-xs flex-1">
+                                    <div className="flex items-start gap-2">
+                                        <Shield className="w-3.5 h-3.5 text-gray-400 mt-0.5" aria-hidden="true" />
+                                        <div className="flex-1">
+                                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                                                Zonas asignadas
+                                            </p>
                                             {user.Regions && user.Regions.length > 0 ? (
                                                 <div className="flex flex-wrap gap-1">
-                                                    {user.Regions.map(r => (
-                                                        <span key={r.id} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">
+                                                    {user.Regions.map((r) => (
+                                                        <span
+                                                            key={r.id}
+                                                            className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-[11px] border border-gray-200"
+                                                        >
                                                             {r.nombre}
                                                         </span>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <span className="text-gray-400 text-xs">-</span>
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                                    Sin zona asignada
+                                                </span>
                                             )}
-                                        </td>
-                                        <td className="p-4">
-                                            <button 
-                                                onClick={() => handleStatusChange(user)}
-                                                className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-                                                    user.estado 
-                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                                                        : 'bg-red-100 text-red-800 hover:bg-red-200'
-                                                }`}
-                                            >
-                                                {user.estado ? <Check size={12} /> : <X size={12} />}
-                                                {user.estado ? 'Activo' : 'Inactivo'}
-                                            </button>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="text-xs text-gray-500">
-                                                {user.Permisos && user.Permisos.length > 0 
-                                                    ? `${user.Permisos.length} asignados`
-                                                    : 'Sin permisos extras'}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <RequirePermission permission="GESTIONAR_PERMISOS">
-                                                    <button 
-                                                        onClick={() => handleOpenPermisosModal(user)}
-                                                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                                                        title="Gestionar Permisos"
-                                                    >
-                                                        <Shield size={18} />
-                                                    </button>
-                                                </RequirePermission>
-                                                <RequirePermission permission="EDITAR_USUARIO">
-                                                    <button 
-                                                        onClick={() => handleOpenModal(user)}
-                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit size={18} />
-                                                    </button>
-                                                </RequirePermission>
-                                                <RequirePermission permission="ELIMINAR_USUARIO">
-                                                    <button 
-                                                        onClick={() => handleDelete(user)}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Eliminar"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </RequirePermission>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                        </div>
+                                    </div>
 
-                {/* Paginación */}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <button
+                                            onClick={() => handleStatusChange(user)}
+                                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold ${
+                                                user.estado
+                                                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                    : 'bg-red-100 text-red-800 hover:bg-red-200'
+                                            }`}
+                                            type="button"
+                                            aria-pressed={user.estado}
+                                            aria-label={user.estado ? 'Desactivar usuario' : 'Activar usuario'}
+                                        >
+                                            {user.estado ? <Check size={12} aria-hidden="true" /> : <X size={12} aria-hidden="true" />}
+                                            {user.estado ? 'Activo' : 'Inactivo'}
+                                        </button>
+
+                                        <div className="text-[11px] text-gray-500 text-right">
+                                            {user.Permisos && user.Permisos.length > 0
+                                                ? `${user.Permisos.length} permisos extra`
+                                                : 'Sin permisos extra'}
+                                        </div>
+                                    </div>
+
+                                    {user.telefono && (
+                                        <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                                            <Phone className="w-3.5 h-3.5" aria-hidden="true" />
+                                            <span>{user.telefono}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-auto px-4 pt-3 pb-3 border-t border-gray-100 flex items-center justify-between gap-2 bg-white/60">
+                                    <span className="text-[11px] text-gray-400">
+                                        ID: {user.id}
+                                    </span>
+                                    <div className="inline-flex justify-end gap-2 bg-gray-50 border border-gray-200 rounded-full px-2 py-1 shadow-sm">
+                                        <RequirePermission permission="GESTIONAR_PERMISOS">
+                                            <button
+                                                onClick={() => handleOpenPermisosModal(user)}
+                                                className="p-2 rounded-full text-purple-600 hover:bg-purple-50 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500/60 focus:ring-offset-1 focus:ring-offset-white transition-colors"
+                                                title="Gestionar Permisos"
+                                                type="button"
+                                            >
+                                                <Shield size={16} aria-hidden="true" />
+                                            </button>
+                                        </RequirePermission>
+                                        <RequirePermission permission="EDITAR_USUARIO">
+                                            <button
+                                                onClick={() => handleOpenModal(user)}
+                                                className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/60 focus:ring-offset-1 focus:ring-offset-white transition-colors"
+                                                title="Editar usuario"
+                                                type="button"
+                                            >
+                                                <Edit size={16} aria-hidden="true" />
+                                            </button>
+                                        </RequirePermission>
+                                        <RequirePermission permission="ELIMINAR_USUARIO">
+                                            <button
+                                                onClick={() => handleDelete(user)}
+                                                className="p-2 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/60 focus:ring-offset-1 focus:ring-offset-white transition-colors"
+                                                title="Eliminar usuario"
+                                                type="button"
+                                            >
+                                                <Trash2 size={16} aria-hidden="true" />
+                                            </button>
+                                        </RequirePermission>
+                                    </div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                )}
+
                 <div className="flex justify-between items-center p-4 border-t border-gray-100">
                     <span className="text-sm text-gray-500">
                         Mostrando {usuarios.length} de {totalItems} usuarios
                     </span>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
                             disabled={page === 1}
                             className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                            type="button"
                         >
                             Anterior
                         </button>
@@ -436,9 +466,10 @@ const Usuarios = () => {
                             Página {page} de {totalPages}
                         </span>
                         <button
-                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                             disabled={page === totalPages}
                             className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                            type="button"
                         >
                             Siguiente
                         </button>

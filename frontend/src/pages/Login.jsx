@@ -145,7 +145,7 @@ export default function Login() {
       <div className={`absolute inset-0 bg-gradient-to-b pointer-events-none transition-colors duration-700 ${isGuardMode ? 'from-black via-gray-900 to-black' : 'from-transparent via-white/50 to-white/80'}`}></div>
 
       {/* --- CONTENEDOR FLIP 3D (Tarjeta Giratoria) --- */}
-      <div className="relative w-full max-w-[400px] h-[620px] p-4" style={{ perspective: '2000px' }}>
+      <div className="relative w-full max-w-[400px] h-[680px] p-4" style={{ perspective: '2000px' }}>
           <div 
               className="relative w-full h-full transition-transform duration-700 cubic-bezier(0.4, 0.0, 0.2, 1)" 
               style={{ transformStyle: 'preserve-3d', transform: isGuardMode ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
@@ -267,7 +267,7 @@ export default function Login() {
 
                   {/* Footer Tarjeta */}
                   <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 flex justify-between items-center">
-                      <span className="text-xs text-gray-400 font-mono">v1.0.4</span>
+                      <span className="text-xs text-gray-400 font-mono">v2.1.1</span>
                       <span className="text-xs text-gray-400 flex items-center gap-1">
                           <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
                               <path d="M256 0c4.6 0 9.2 1 13.4 2.9L457.7 82.8c22 9.3 38.4 31 38.3 57.2c-.5 99.2-41.3 280.7-213.6 363.2c-16.7 8-36.1 8-52.8 0C57.3 420.7 16.5 239.2 16 140c-.1-26.2 16.3-47.9 38.3-57.2L242.7 2.9C246.8 1 251.4 0 256 0zm0 66.8l0 378.1C394 378 431.1 230.1 432 141.4L256 66.8s0 0 0 0z"></path>
