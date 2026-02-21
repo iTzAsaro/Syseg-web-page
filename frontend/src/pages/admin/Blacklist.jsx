@@ -41,6 +41,28 @@ const toTitleCase = (str) => {
     });
 };
 
+const normalizeText = (str) => {
+    if (!str) return '';
+    return str
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+const normalizeRut = (rut) => {
+    if (!rut) return '';
+    return rut.replace(/[^0-9kK]/g, '').toLowerCase();
+};
+
+const tokenize = (str) => {
+    const normalized = normalizeText(str);
+    if (!normalized) return [];
+    return normalized.split(' ').filter(Boolean);
+};
+
 export default function Blacklist() {
   const [blacklist, setBlacklist] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -175,23 +197,18 @@ export default function Blacklist() {
 
     const firstChar = value.charAt(0);
     
-    // Detectar tipo de búsqueda y aplicar lógica
     if (/[0-9]/.test(firstChar)) {
-        // Lógica RUT: solo números y k/K
         const clean = value.replace(/[^0-9kK]/g, '');
-        // Formatear mientras escribe
         const formatted = formatRut(clean);
         value = formatted;
         
-        // Validar RUT completo (si tiene al menos un cuerpo y DV)
         if (clean.length > 1 && !validateRut(clean)) {
             setSearchError('RUT inválido');
         } else {
             setSearchError('');
         }
     } else if (/[a-zA-Z\u00C0-\u00FF]/.test(firstChar)) {
-        // Lógica Nombre: solo letras y espacios
-        value = value.replace(/[^a-zA-Z\u00C0-\u00FF\s]/g, ''); // Incluir acentos
+        value = value.replace(/[^a-zA-Z\u00C0-\u00FF\s]/g, '');
         value = toTitleCase(value);
         
         if (value.length > 0 && value.length < 3) {
@@ -205,10 +222,29 @@ export default function Blacklist() {
     setCurrentPage(1);
   };
 
-  const filteredBlacklist = blacklist.filter(item => 
-    (item.nombre?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
-    (item.rut || '').includes(searchTerm)
-  );
+  const filteredBlacklist = blacklist.filter(item => {
+    const searchTextTokens = tokenize(searchTerm);
+    const searchRut = normalizeRut(searchTerm);
+
+    if (searchTextTokens.length === 0 && !searchRut) {
+        return true;
+    }
+
+    const nombreTokens = tokenize(item.nombre);
+    const rutNormalizado = normalizeRut(item.rut);
+
+    const matchNombre = searchTextTokens.length
+        ? searchTextTokens.every(token =>
+            nombreTokens.some(nombreToken => nombreToken.startsWith(token))
+        )
+        : false;
+
+    const matchRut = searchRut
+        ? rutNormalizado.includes(searchRut)
+        : false;
+
+    return matchNombre || matchRut;
+  });
 
   // Paginación
   const totalPages = Math.ceil(filteredBlacklist.length / itemsPerPage);
