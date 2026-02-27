@@ -1,6 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
+/**
+ * NOMBRE: Modelo Entrega EPP
+ * FUNCIÓN: Registra la transacción principal de entrega de equipos de protección personal.
+ * USO: Centraliza información del receptor, fecha, estado y firma digital.
+ * -----------------------------------------------------------------------
+ * Cabecera que agrupa múltiples detalles de entrega. Soporta receptores con y sin usuario de sistema.
+ */
 const EntregaEpp = sequelize.define('EntregaEpp', {
     id: {
         type: DataTypes.INTEGER,

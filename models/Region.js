@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo Region (División geográfica principal)
+/**
+ * NOMBRE: Modelo Región
+ * FUNCIÓN: Define la división geográfica principal del país.
+ * USO: Agrupador de nivel superior para Comunas y asignación de zonas a Supervisores.
+ * -----------------------------------------------------------------------
+ * Estructura base para la segmentación territorial operativa.
+ */
 const Region = sequelize.define('Region', {
     id: {
         type: DataTypes.INTEGER,

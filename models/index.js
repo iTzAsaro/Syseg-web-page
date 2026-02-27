@@ -1,3 +1,10 @@
+/**
+ * NOMBRE: Índice de Modelos
+ * FUNCIÓN: Inicializa y exporta todos los modelos y sus relaciones.
+ * USO: Punto de entrada único para interactuar con la capa de datos.
+ * -----------------------------------------------------------------------
+ * Define las asociaciones (hasOne, hasMany, belongsTo, belongsToMany) del ORM.
+ */
 const sequelize = require('../config/database');
 
 const Rol = require('./Rol');

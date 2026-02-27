@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo MovimientoInventario (Registro de entradas y salidas de stock)
+/**
+ * NOMBRE: Modelo Movimiento Inventario
+ * FUNCIÓN: Registra las variaciones de stock (entradas y salidas) de productos.
+ * USO: Auditoría completa de cambios en inventario, vinculando usuario, tipo y motivo.
+ * -----------------------------------------------------------------------
+ * Fundamental para el control de existencias y trazabilidad de operaciones logísticas.
+ */
 const MovimientoInventario = sequelize.define('MovimientoInventario', {
     id: {
         type: DataTypes.INTEGER,

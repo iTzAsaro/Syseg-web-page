@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo DocumentoGuardia (Documentos subidos por los guardias, ej. Contratos, Certificados)
+/**
+ * NOMBRE: Modelo Documento Guardia
+ * FUNCIÓN: Gestiona los archivos y documentos asociados a un guardia.
+ * USO: Almacena rutas de archivos, estados de aprobación y fechas de vencimiento.
+ * -----------------------------------------------------------------------
+ * Crítico para el cumplimiento legal y administrativo (ej. Contratos, Certificados OS10).
+ */
 const DocumentoGuardia = sequelize.define('DocumentoGuardia', {
     id: {
         type: DataTypes.INTEGER,

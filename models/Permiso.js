@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo Permiso (Define acciones específicas que un usuario puede realizar)
+/**
+ * NOMBRE: Modelo Permiso
+ * FUNCIÓN: Define las acciones específicas autorizadas dentro del sistema.
+ * USO: Control de acceso granular (RBAC) mediante códigos únicos (ej. VER_USUARIOS).
+ * -----------------------------------------------------------------------
+ * Se asignan a usuarios directamente para habilitar funcionalidades específicas.
+ */
 const Permiso = sequelize.define('Permiso', {
     id: {
         type: DataTypes.INTEGER,

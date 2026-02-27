@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo Rol (Perfil de usuario, ej. Administrador, Supervisor)
+/**
+ * NOMBRE: Modelo Rol
+ * FUNCIÓN: Define los perfiles de usuario disponibles en el sistema.
+ * USO: Determina el nivel de acceso general y privilegios (ej. Administrador, Supervisor).
+ * -----------------------------------------------------------------------
+ * Base del sistema de control de acceso (RBAC) junto con los Permisos.
+ */
 const Rol = sequelize.define('Rol', {
     id: {
         type: DataTypes.INTEGER,

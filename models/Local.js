@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo Local (Lugar físico donde se presta el servicio de seguridad)
+/**
+ * NOMBRE: Modelo Local
+ * FUNCIÓN: Define los lugares físicos donde se presta el servicio de seguridad.
+ * USO: Registra nombre, dirección, estado y ubicación geográfica de los recintos.
+ * -----------------------------------------------------------------------
+ * Entidad clave para la asignación de turnos y gestión de clientes.
+ */
 const Local = sequelize.define('Local', {
     id: {
         type: DataTypes.INTEGER,

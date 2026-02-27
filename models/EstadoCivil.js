@@ -1,6 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
+/**
+ * NOMBRE: Modelo Estado Civil
+ * FUNCIÓN: Define los posibles estados civiles de una persona.
+ * USO: Clasificación demográfica para los perfiles de guardias.
+ * -----------------------------------------------------------------------
+ * Tabla de referencia simple utilizada en formularios de datos personales.
+ */
 const EstadoCivil = sequelize.define('EstadoCivil', {
     id: {
         type: DataTypes.INTEGER,

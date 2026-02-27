@@ -1,6 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
+/**
+ * NOMBRE: Modelo Lista Negra
+ * FUNCIÓN: Define la estructura para el registro de personas bloqueadas (Blacklist).
+ * USO: Gestiona restricciones de acceso a recintos basadas en RUT.
+ * -----------------------------------------------------------------------
+ * Incluye campos para auditar quién realizó el bloqueo y el motivo del mismo.
+ */
 const Blacklist = sequelize.define('Blacklist', {
     id: {
         type: DataTypes.INTEGER,
@@ -42,7 +49,7 @@ const Blacklist = sequelize.define('Blacklist', {
     }
 }, {
     tableName: 'blacklist',
-    timestamps: true // Para createdAt y updatedAt
+    timestamps: true
 });
 
 module.exports = Blacklist;

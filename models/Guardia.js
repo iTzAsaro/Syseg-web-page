@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo Guardia (Personal de seguridad, gestiona perfil, tallas y datos bancarios)
+/**
+ * NOMBRE: Modelo Guardia
+ * FUNCIÓN: Gestiona la información completa del personal de seguridad.
+ * USO: Centraliza datos personales, laborales, tallas, bancarios y de contacto.
+ * -----------------------------------------------------------------------
+ * Modelo principal del sistema. Incluye identificadores únicos (RUT) y relaciones con tablas auxiliares.
+ */
 const Guardia = sequelize.define('Guardia', {
     id: {
         type: DataTypes.INTEGER,

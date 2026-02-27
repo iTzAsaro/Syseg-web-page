@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo Usuario (Administradores y personal administrativo del sistema web)
+/**
+ * NOMBRE: Modelo Usuario
+ * FUNCIÓN: Administra las cuentas de acceso al sistema web y móvil.
+ * USO: Autenticación, gestión de perfiles, roles y recuperación de contraseñas.
+ * -----------------------------------------------------------------------
+ * Núcleo de la seguridad. Vincula acciones de auditoría y gestión de recursos.
+ */
 const Usuario = sequelize.define('Usuario', {
     id: {
         type: DataTypes.INTEGER,

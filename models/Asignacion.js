@@ -2,8 +2,11 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 /**
- * Modelo Asignacion
- * Representa la asignación de un turno a un guardia en un local específico.
+ * NOMBRE: Modelo Asignación
+ * FUNCIÓN: Define la estructura para la gestión de turnos de guardias en locales.
+ * USO: Registra la relación entre guardia, local, fecha y horario de servicio.
+ * -----------------------------------------------------------------------
+ * Base central del módulo de programación de turnos. Incluye timestamps automáticos.
  */
 const Asignacion = sequelize.define('Asignacion', {
     id: {
@@ -45,7 +48,7 @@ const Asignacion = sequelize.define('Asignacion', {
     }
 }, {
     tableName: 'asignaciones',
-    timestamps: true // Para registro de fecha de creación y actualización
+    timestamps: true
 });
 
 module.exports = Asignacion;

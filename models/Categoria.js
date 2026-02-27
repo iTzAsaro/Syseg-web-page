@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo Categoria (Para clasificar productos)
+/**
+ * NOMBRE: Modelo Categoría
+ * FUNCIÓN: Define la estructura para clasificar productos.
+ * USO: Permite agrupar productos en categorías lógicas para el inventario.
+ * -----------------------------------------------------------------------
+ * Tabla simple utilizada para organizar el catálogo de productos.
+ */
 const Categoria = sequelize.define('Categoria', {
     id: {
         type: DataTypes.INTEGER,

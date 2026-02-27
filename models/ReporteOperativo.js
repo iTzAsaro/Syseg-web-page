@@ -1,6 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
+/**
+ * NOMBRE: Modelo Reporte Operativo
+ * FUNCIÓN: Registra incidentes, novedades y eventos ocurridos durante el servicio.
+ * USO: Almacena detalles del incidente, nivel de riesgo, ubicación y acciones tomadas.
+ * -----------------------------------------------------------------------
+ * Puede ser generado tanto por usuarios de sistema como por guardias desde la app.
+ */
 const ReporteOperativo = sequelize.define('ReporteOperativo', {
   id: {
     type: DataTypes.INTEGER,

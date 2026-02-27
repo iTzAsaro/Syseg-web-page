@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo Producto (Ítems de inventario, ej. Uniformes, EPP)
+/**
+ * NOMBRE: Modelo Producto
+ * FUNCIÓN: Define los ítems gestionables en el inventario (Uniformes, EPP, etc.).
+ * USO: Almacena información de stock actual, alertas de mínimo y categorización.
+ * -----------------------------------------------------------------------
+ * Objeto central del módulo de logística e inventario.
+ */
 const Producto = sequelize.define('Producto', {
     id: {
         type: DataTypes.INTEGER,

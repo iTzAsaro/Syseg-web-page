@@ -1,7 +1,13 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Modelo TipoDocumento (Clasificación de documentos: Contrato, OS10, Certificado Antecedentes, etc.)
+/**
+ * NOMBRE: Modelo Tipo de Documento
+ * FUNCIÓN: Clasifica los documentos que pueden asociarse a un guardia.
+ * USO: Define categorías (Contrato, OS10) y si el documento afecta inventario.
+ * -----------------------------------------------------------------------
+ * Permite organizar la documentación legal y administrativa del personal.
+ */
 const TipoDocumento = sequelize.define('TipoDocumento', {
     id: {
         type: DataTypes.INTEGER,
