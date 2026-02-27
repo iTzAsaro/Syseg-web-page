@@ -1,6 +1,13 @@
 const { verifyToken, hasPermission } = require('../middleware/authJwt');
 const controller = require('../controllers/guardiaController');
 
+/**
+ * NOMBRE: Rutas de Guardia
+ * FUNCIÓN: Define los endpoints para la gestión integral del personal de seguridad.
+ * USO: CRUD completo incluyendo perfil, tallas, datos bancarios y documentos.
+ * -----------------------------------------------------------------------
+ * Requiere permisos específicos para cada operación (CREAR, VER, EDITAR, ELIMINAR).
+ */
 module.exports = function(app) {
     // Rutas para gestión de Guardias
     app.post("/api/guardias", [verifyToken, hasPermission('CREAR_GUARDIA')], controller.crear);          // Crear nuevo guardia

@@ -1,6 +1,13 @@
 const { verifyToken, hasPermission } = require('../middleware/authJwt');
 const controller = require('../controllers/blacklistController');
 
+/**
+ * NOMBRE: Rutas de Lista Negra
+ * FUNCIÓN: Define los endpoints para gestionar restricciones de acceso.
+ * USO: Permite bloquear y desbloquear personas mediante su RUT.
+ * -----------------------------------------------------------------------
+ * Crítico para la seguridad de los recintos.
+ */
 module.exports = function(app) {
     app.post("/api/blacklist", [verifyToken, hasPermission('CREAR_BLACKLIST')], controller.crear);
     app.get("/api/blacklist", [verifyToken, hasPermission('VER_BLACKLIST')], controller.buscarTodos);

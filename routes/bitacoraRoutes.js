@@ -1,6 +1,13 @@
 const { verifyToken, hasPermission } = require('../middleware/authJwt');
 const controller = require('../controllers/bitacoraController');
 
+/**
+ * NOMBRE: Rutas de Bitácora
+ * FUNCIÓN: Define los endpoints para el registro de eventos operativos (Libro de Novedades).
+ * USO: CRUD completo para gestionar entradas en la bitácora digital.
+ * -----------------------------------------------------------------------
+ * Requiere permisos específicos para cada acción.
+ */
 module.exports = function(app) {
     // Crear registro
     app.post("/api/bitacora", [verifyToken, hasPermission('CREAR_BITACORA')], controller.create);

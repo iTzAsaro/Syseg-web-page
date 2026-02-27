@@ -1,6 +1,13 @@
 const { verifyToken, hasPermission } = require('../middleware/authJwt');
 const controller = require('../controllers/usuarioController');
 
+/**
+ * NOMBRE: Rutas de Usuario
+ * FUNCIÓN: Define los endpoints para la administración de cuentas de usuario.
+ * USO: CRUD completo, gestión de roles, permisos, estados y cambio de contraseñas.
+ * -----------------------------------------------------------------------
+ * Control central del acceso al sistema (Backend Web).
+ */
 module.exports = function(app) {
     // Rutas de Metadatos (Roles y Permisos)
     app.get("/api/roles", [verifyToken, hasPermission('VER_USUARIOS')], controller.obtenerRoles);

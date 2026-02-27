@@ -1,6 +1,13 @@
 const { verifyToken } = require('../middleware/authJwt');
 const controller = require('../controllers/authController');
 
+/**
+ * NOMBRE: Rutas de Autenticación
+ * FUNCIÓN: Define los endpoints para inicio de sesión y verificación de credenciales.
+ * USO: Maneja login web, login app y validación de tokens JWT.
+ * -----------------------------------------------------------------------
+ * Incluye configuración de cabeceras CORS específicas para autenticación.
+ */
 module.exports = function(app) {
     // Middleware para configurar cabeceras de CORS
     app.use(function(req, res, next) {
