@@ -1,78 +1,50 @@
-const { ReporteOperativo, Guardia, Usuario } = require('../models');
+const { ReporteOperativo } = require('../models');
 
+/**
+ * ================================================================================================
+ * NOMBRE: Crear Reporte Operativo
+ * FUNCIÓN: Registra un nuevo incidente o evento operativo detectando automáticamente el tipo de usuario.
+ * USO: POST /reportes-operativos - Retorna el objeto creado.
+ * -----------------------------------------------------------------------
+ * Asigna guardia_id o usuario_id según req.userType y normaliza la dirección IP.
+ * ================================================================================================
+ */
 exports.create = async (req, res) => {
-  try {
-    const {
-      tipo_incidente,
-      nivel_riesgo,
-      fecha_evento,
-      hora_evento,
-      duracion_estimada,
-      lugar,
-      descripcion,
-      funcionario_cargo,
-      aviso_central,
-      aviso_jefatura
-    } = req.body;
+    try {
+        const isGuardia = req.userType === 'guardia';
+        let ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip;
+        if (['::1', '::ffff:127.0.0.1'].includes(ip)) ip = '127.0.0.1';
 
-    let guardia_id = null;
-    let usuario_id = null;
-    let creado_por_tipo = null;
+        const reporte = await ReporteOperativo.create({
+            ...req.body,
+            guardia_id: isGuardia ? req.userId : null,
+            usuario_id: !isGuardia ? (req.userId || null) : null,
+            creado_por_tipo: isGuardia ? 'guardia' : 'usuario',
+            aviso_central: !!req.body.aviso_central,
+            aviso_jefatura: !!req.body.aviso_jefatura,
+            ip_address: ip
+        });
 
-    if (req.userType === 'guardia') {
-      guardia_id = req.userId;
-      creado_por_tipo = 'guardia';
-    } else {
-      usuario_id = req.userId || null;
-      creado_por_tipo = 'usuario';
+        res.status(201).json(reporte);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-
-    let ip_address = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip;
-    if (ip_address === '::1' || ip_address === '::ffff:127.0.0.1') {
-      ip_address = '127.0.0.1';
-    }
-
-    const reporte = await ReporteOperativo.create({
-      guardia_id,
-      usuario_id,
-      tipo_incidente,
-      nivel_riesgo,
-      fecha_evento,
-      hora_evento,
-      duracion_estimada,
-      lugar,
-      descripcion,
-      funcionario_cargo,
-      aviso_central: !!aviso_central,
-      aviso_jefatura: !!aviso_jefatura,
-      creado_por_tipo,
-      ip_address
-    });
-
-    res.status(201).json(reporte);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
+/**
+ * ================================================================================================
+ * NOMBRE: Mis Reportes
+ * FUNCIÓN: Obtiene el historial de reportes creados por el usuario o guardia actual.
+ * USO: GET /reportes-operativos/mis-reportes - Retorna array de reportes.
+ * -----------------------------------------------------------------------
+ * Filtra dinámicamente por ID del solicitante según su rol (guardia o usuario).
+ * ================================================================================================
+ */
 exports.getMyReports = async (req, res) => {
-  try {
-    const where = {};
-
-    if (req.userType === 'guardia') {
-      where.guardia_id = req.userId;
-    } else {
-      where.usuario_id = req.userId || null;
+    try {
+        const where = req.userType === 'guardia' ? { guardia_id: req.userId } : { usuario_id: req.userId || null };
+        res.json(await ReporteOperativo.findAll({ where, order: [['createdAt', 'DESC']] }));
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-
-    const reportes = await ReporteOperativo.findAll({
-      where,
-      order: [['createdAt', 'DESC']]
-    });
-
-    res.json(reportes);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 };
-

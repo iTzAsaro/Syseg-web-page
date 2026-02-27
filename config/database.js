@@ -1,30 +1,24 @@
-// Importar la biblioteca Sequelize para interactuar con la base de datos
+/**
+ * ================================================================================================
+ * NOMBRE: Configuración de Base de Datos (Sequelize)
+ * FUNCIÓN: Establece y exporta la conexión a la base de datos MySQL usando variables de entorno.
+ * USO: Importar 'sequelize' en modelos/controladores para interactuar con la BD.
+ * -----------------------------------------------------------------------
+ * Utiliza un pool de conexiones para optimizar el rendimiento y desactiva logs SQL por defecto.
+ * ================================================================================================
+ */
 const Sequelize = require('sequelize');
-// Cargar las variables de entorno desde el archivo .env
 require('dotenv').config();
 
-// Inicializar una nueva instancia de Sequelize para la conexión a la base de datos
-const sequelize = new Sequelize(
-    process.env.DB_NAME, // Nombre de la base de datos
-    process.env.DB_USER, // Usuario de la base de datos
-    process.env.DB_PASS, // Contraseña de la base de datos
-    {
-        host: process.env.DB_HOST, // Host de la base de datos (ej. localhost o IP remota)
-        dialect: 'mysql', // Dialecto de la base de datos (en este caso, MySQL)
-        port: process.env.DB_PORT || 3306, // Puerto de conexión (por defecto 3306)
-        logging: false, // Desactivar el registro de consultas SQL en la consola
-        pool: {
-            max: 5, // Número máximo de conexiones en el pool
-            min: 0, // Número mínimo de conexiones en el pool
-            acquire: 30000, // Tiempo máximo (ms) para intentar conectar antes de lanzar error
-            idle: 10000 // Tiempo máximo (ms) que una conexión puede estar inactiva antes de ser liberada
-        },
-        define: {
-            timestamps: false, // No agregar automáticamente los campos createdAt y updatedAt a las tablas
-            underscored: true // Usar snake_case para los nombres de campos generados automáticamente
-        }
-    }
-);
+const { DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT } = process.env;
 
-// Exportar la instancia de sequelize para usarla en otros archivos del proyecto
+const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASS, {
+  host: DB_HOST,
+  dialect: 'mysql',
+  port: DB_PORT || 3306,
+  logging: false,
+  pool: { max: 5, min: 0, acquire: 30000, idle: 10000 },
+  define: { timestamps: false, underscored: true }
+});
+
 module.exports = sequelize;

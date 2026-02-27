@@ -1,5 +1,14 @@
 const { Categoria, Producto } = require('../models');
 
+/**
+ * ================================================================================================
+ * NOMBRE: Listar Categorías
+ * FUNCIÓN: Obtiene todas las categorías de productos disponibles en el sistema.
+ * USO: GET /categorias - Retorna array JSON con objetos de categoría.
+ * -----------------------------------------------------------------------
+ * Recupera todos los registros sin filtros ni paginación, ideal para llenar selectores en el frontend.
+ * ================================================================================================
+ */
 exports.getAll = async (req, res) => {
     try {
         const categorias = await Categoria.findAll();
@@ -9,6 +18,15 @@ exports.getAll = async (req, res) => {
     }
 };
 
+/**
+ * ================================================================================================
+ * NOMBRE: Crear Categoría
+ * FUNCIÓN: Registra una nueva categoría para la clasificación de productos.
+ * USO: POST /categorias - Retorna el objeto de la categoría creada.
+ * -----------------------------------------------------------------------
+ * Valida la presencia del campo 'nombre' antes de intentar la inserción en base de datos.
+ * ================================================================================================
+ */
 exports.create = async (req, res) => {
     try {
         const { nombre } = req.body;
@@ -23,6 +41,15 @@ exports.create = async (req, res) => {
     }
 };
 
+/**
+ * ================================================================================================
+ * NOMBRE: Eliminar Categoría
+ * FUNCIÓN: Elimina una categoría existente y desvincula los productos asociados.
+ * USO: DELETE /categorias/:id - Retorna 204 No Content si es exitoso.
+ * -----------------------------------------------------------------------
+ * Antes de eliminar, actualiza los productos asociados seteando 'categoria_id' a NULL para mantener integridad referencial sin borrar productos.
+ * ================================================================================================
+ */
 exports.delete = async (req, res) => {
     try {
         const id = req.params.id;

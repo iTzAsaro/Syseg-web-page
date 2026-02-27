@@ -1,6 +1,15 @@
 const { Auditoria, Usuario } = require('../models');
 const { Op } = require('sequelize');
 
+/**
+ * ================================================================================================
+ * NOMBRE: Listar Logs de Auditoría
+ * FUNCIÓN: Recupera el historial de eventos del sistema con paginación y filtrado avanzado.
+ * USO: GET /auditoria?page=1&usuario_id=5&accion=LOGIN - Retorna lista paginada de logs.
+ * -----------------------------------------------------------------------
+ * Implementa paginación offset-based y construye filtros dinámicos (Like para acciones, Between para fechas) usando Sequelize.
+ * ================================================================================================
+ */
 exports.listarLogs = async (req, res) => {
     try {
         const { page = 1, limit = 20, usuario_id, accion, fecha_inicio, fecha_fin } = req.query;

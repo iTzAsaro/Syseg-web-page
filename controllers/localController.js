@@ -1,6 +1,15 @@
 const { Local, Comuna } = require('../models');
 
-const getAllLocals = async (req, res) => {
+/**
+ * ================================================================================================
+ * NOMBRE: Listar Locales Activos
+ * FUNCIÓN: Obtiene todos los locales que están marcados como activos (estado: true).
+ * USO: GET /locales - Retorna array JSON de locales con nombre de comuna asociada.
+ * -----------------------------------------------------------------------
+ * Filtra automáticamente por 'estado: true' para no mostrar locales deshabilitados.
+ * ================================================================================================
+ */
+exports.getAllLocals = async (req, res) => {
     try {
         const locals = await Local.findAll({
             include: [{ model: Comuna, attributes: ['nombre'] }],
@@ -8,9 +17,6 @@ const getAllLocals = async (req, res) => {
         });
         res.json(locals);
     } catch (error) {
-        console.error('Error fetching locals:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
+        res.status(500).json({ message: error.message });
     }
 };
-
-module.exports = { getAllLocals };

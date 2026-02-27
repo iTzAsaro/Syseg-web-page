@@ -2,189 +2,129 @@ const { Asignacion, Guardia, Local } = require('../models');
 const { Op } = require('sequelize');
 
 /**
- * Crea una nueva asignación de turno para un guardia.
- * Valida que no existan superposiciones de horario para el mismo guardia.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
+ * NOMBRE: Verificar Superposición de Horarios
+ * FUNCIÓN: Comprueba si un guardia tiene conflictos de horario en una fecha específica.
+ * USO: await checkScheduleOverlap(params) - Retorna la asignación conflictiva si existe.
+ * -----------------------------------------------------------------------
+ * Utiliza Op.or para detectar solapamientos totales o parciales en el rango de tiempo.
  */
-const createAsignacion = async (req, res) => {
-    try {
-        const { guardia_id, local_id, fecha, turno, hora_inicio, hora_fin, observacion } = req.body;
-
-        // Validar superposición de horarios para el mismo guardia
-        const existingAssignment = await Asignacion.findOne({
-            where: {
-                guardia_id,
-                fecha,
-                [Op.or]: [
-                    {
-                        hora_inicio: {
-                            [Op.between]: [hora_inicio, hora_fin]
-                        }
-                    },
-                    {
-                        hora_fin: {
-                            [Op.between]: [hora_inicio, hora_fin]
-                        }
-                    },
-                    {
-                        [Op.and]: [
-                            { hora_inicio: { [Op.lte]: hora_inicio } },
-                            { hora_fin: { [Op.gte]: hora_fin } }
-                        ]
-                    }
-                ]
-            }
-        });
-
-        if (existingAssignment) {
-            return res.status(400).json({ message: 'El guardia ya tiene una asignación en ese horario.' });
-        }
-
-        const asignacion = await Asignacion.create({
-            guardia_id,
-            local_id,
-            fecha,
-            turno,
-            hora_inicio,
-            hora_fin,
-            observacion
-        });
-
-        const asignacionConDatos = await Asignacion.findByPk(asignacion.id, {
-            include: [
-                { model: Guardia, attributes: ['id', 'nombre', 'rut'] },
-                { model: Local, attributes: ['id', 'nombre'] }
-            ]
-        });
-
-        res.status(201).json(asignacionConDatos);
-    } catch (error) {
-        console.error('Error creando asignación:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
-    }
+const checkScheduleOverlap = async ({ guardia_id, fecha, hora_inicio, hora_fin, excludeId }) => {
+    const where = {
+        guardia_id, fecha,
+        [Op.or]: [
+            { hora_inicio: { [Op.between]: [hora_inicio, hora_fin] } },
+            { hora_fin: { [Op.between]: [hora_inicio, hora_fin] } },
+            { [Op.and]: [{ hora_inicio: { [Op.lte]: hora_inicio } }, { hora_fin: { [Op.gte]: hora_fin } }] }
+        ]
+    };
+    if (excludeId) where.id = { [Op.ne]: excludeId };
+    return await Asignacion.findOne({ where });
 };
 
 /**
- * Obtiene la lista de asignaciones con filtros opcionales.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
+ * NOMBRE: Obtener Asignación Completa
+ * FUNCIÓN: Recupera una asignación con datos del guardia y local asociados.
+ * USO: await getWithRelations(id) - Retorna objeto Asignacion con includes.
+ * -----------------------------------------------------------------------
+ * Optimiza la consulta mediante Eager Loading de las relaciones necesarias.
  */
-const getAsignaciones = async (req, res) => {
+const getWithRelations = (id) => Asignacion.findByPk(id, {
+    include: [
+        { model: Guardia, attributes: ['id', 'nombre', 'rut'] },
+        { model: Local, attributes: ['id', 'nombre'] }
+    ]
+});
+
+/**
+ * NOMBRE: Crear Asignación
+ * FUNCIÓN: Registra un nuevo turno validando disponibilidad del guardia.
+ * USO: POST /asignaciones - Retorna objeto creado.
+ * -----------------------------------------------------------------------
+ * Verifica conflictos de horario antes de insertar el registro.
+ */
+exports.createAsignacion = async (req, res) => {
+    try {
+        const { guardia_id, local_id, fecha, hora_inicio, hora_fin } = req.body;
+        if (!guardia_id || !local_id || !fecha || !hora_inicio || !hora_fin) 
+            return res.status(400).json({ message: 'Faltan campos obligatorios.' });
+
+        if (await checkScheduleOverlap(req.body)) 
+            return res.status(400).json({ message: 'Conflicto de horario detectado.' });
+
+        const nueva = await Asignacion.create(req.body);
+        res.status(201).json(await getWithRelations(nueva.id));
+    } catch (e) { res.status(500).json({ message: 'Error al crear asignación.' }); }
+};
+
+/**
+ * NOMBRE: Listar Asignaciones
+ * FUNCIÓN: Obtiene asignaciones filtradas por fecha, guardia o local.
+ * USO: GET /asignaciones - Retorna lista ordenada por fecha y hora.
+ * -----------------------------------------------------------------------
+ * Construye filtros dinámicos basados en query params.
+ */
+exports.getAsignaciones = async (req, res) => {
     try {
         const { start_date, end_date, guardia_id, local_id } = req.query;
-        const whereClause = {};
+        const where = {};
+        
+        if (start_date) where.fecha = end_date ? { [Op.between]: [start_date, end_date] } : { [Op.gte]: start_date };
+        if (guardia_id) where.guardia_id = guardia_id;
+        if (local_id) where.local_id = local_id;
 
-        if (start_date && end_date) {
-            whereClause.fecha = { [Op.between]: [start_date, end_date] };
-        } else if (start_date) {
-            whereClause.fecha = { [Op.gte]: start_date };
-        }
-
-        if (guardia_id) whereClause.guardia_id = guardia_id;
-        if (local_id) whereClause.local_id = local_id;
-
-        const asignaciones = await Asignacion.findAll({
-            where: whereClause,
+        const data = await Asignacion.findAll({
+            where,
             include: [
                 { model: Guardia, attributes: ['id', 'nombre', 'rut'] },
                 { model: Local, attributes: ['id', 'nombre', 'direccion'] }
             ],
             order: [['fecha', 'ASC'], ['hora_inicio', 'ASC']]
         });
-
-        res.json(asignaciones);
-    } catch (error) {
-        console.error('Error obteniendo asignaciones:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
-    }
+        res.json(data);
+    } catch (e) { res.status(500).json({ message: 'Error al obtener asignaciones.' }); }
 };
 
 /**
- * Actualiza una asignación existente.
- * Valida conflictos de horario si se modifican las horas.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
+ * NOMBRE: Actualizar Asignación
+ * FUNCIÓN: Modifica una asignación existente revalidando disponibilidad.
+ * USO: PUT /asignaciones/:id - Retorna objeto actualizado.
+ * -----------------------------------------------------------------------
+ * Excluye el ID actual de la validación de conflictos de horario.
  */
-const updateAsignacion = async (req, res) => {
+exports.updateAsignacion = async (req, res) => {
     try {
         const { id } = req.params;
-        const { guardia_id, local_id, fecha, turno, hora_inicio, hora_fin, estado, observacion } = req.body;
-
         const asignacion = await Asignacion.findByPk(id);
-        if (!asignacion) {
-            return res.status(404).json({ message: 'Asignación no encontrada' });
-        }
+        if (!asignacion) return res.status(404).json({ message: 'Asignación no encontrada.' });
 
-        // Si se cambian fechas/horas, validar superposición (excluyendo la actual)
-        if (guardia_id && (fecha || hora_inicio || hora_fin)) {
-            const checkGuardia = guardia_id || asignacion.guardia_id;
-            const checkFecha = fecha || asignacion.fecha;
-            const checkInicio = hora_inicio || asignacion.hora_inicio;
-            const checkFin = hora_fin || asignacion.hora_fin;
-
-            const existingAssignment = await Asignacion.findOne({
-                where: {
-                    id: { [Op.ne]: id },
-                    guardia_id: checkGuardia,
-                    fecha: checkFecha,
-                    [Op.or]: [
-                        { hora_inicio: { [Op.between]: [checkInicio, checkFin] } },
-                        { hora_fin: { [Op.between]: [checkInicio, checkFin] } },
-                        {
-                            [Op.and]: [
-                                { hora_inicio: { [Op.lte]: checkInicio } },
-                                { hora_fin: { [Op.gte]: checkFin } }
-                            ]
-                        }
-                    ]
-                }
-            });
-
-            if (existingAssignment) {
-                return res.status(400).json({ message: 'El guardia ya tiene una asignación en ese horario.' });
-            }
+        const { guardia_id, fecha, hora_inicio, hora_fin } = req.body;
+        if ((guardia_id || fecha || hora_inicio || hora_fin) && 
+            await checkScheduleOverlap({ 
+                guardia_id: guardia_id || asignacion.guardia_id,
+                fecha: fecha || asignacion.fecha,
+                hora_inicio: hora_inicio || asignacion.hora_inicio,
+                hora_fin: hora_fin || asignacion.hora_fin,
+                excludeId: id 
+            })) {
+            return res.status(400).json({ message: 'Conflicto de horario al actualizar.' });
         }
 
         await asignacion.update(req.body);
-        
-        // Recargar con relaciones
-        const updatedAsignacion = await Asignacion.findByPk(id, {
-            include: [
-                { model: Guardia, attributes: ['id', 'nombre', 'rut'] },
-                { model: Local, attributes: ['id', 'nombre'] }
-            ]
-        });
-
-        res.json(updatedAsignacion);
-    } catch (error) {
-        console.error('Error actualizando asignación:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
-    }
+        res.json(await getWithRelations(id));
+    } catch (e) { res.status(500).json({ message: 'Error al actualizar asignación.' }); }
 };
 
 /**
- * Elimina una asignación del sistema.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
+ * NOMBRE: Eliminar Asignación
+ * FUNCIÓN: Remueve una asignación por su ID.
+ * USO: DELETE /asignaciones/:id - Retorna confirmación.
+ * -----------------------------------------------------------------------
+ * Elimina físicamente el registro de la base de datos.
  */
-const deleteAsignacion = async (req, res) => {
+exports.deleteAsignacion = async (req, res) => {
     try {
-        const { id } = req.params;
-        const result = await Asignacion.destroy({ where: { id } });
-        if (!result) {
-            return res.status(404).json({ message: 'Asignación no encontrada' });
-        }
-        res.json({ message: 'Asignación eliminada correctamente' });
-    } catch (error) {
-        console.error('Error eliminando asignación:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
-    }
-};
-
-module.exports = {
-    createAsignacion,
-    getAsignaciones,
-    updateAsignacion,
-    deleteAsignacion
+        const deleted = await Asignacion.destroy({ where: { id: req.params.id } });
+        deleted ? res.json({ message: 'Eliminado correctamente.' }) 
+                : res.status(404).json({ message: 'No encontrado.' });
+    } catch (e) { res.status(500).json({ message: 'Error al eliminar.' }); }
 };

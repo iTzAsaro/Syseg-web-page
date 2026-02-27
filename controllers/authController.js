@@ -1,7 +1,15 @@
 const jwt = require('jsonwebtoken');
 const { Usuario, Guardia, Rol, Permiso } = require('../models');
 
-// Inicio de Sesión Web (Administradores)
+/**
+ * ================================================================================================
+ * NOMBRE: Inicio de Sesión Web
+ * FUNCIÓN: Autentica usuarios administradores mediante email y contraseña.
+ * USO: POST /api/auth/signin - Retorna token JWT y datos del usuario con sus permisos.
+ * -----------------------------------------------------------------------
+ * Realiza validación de estado activo y comparación directa de contraseñas. Incluye roles y permisos en la respuesta.
+ * ================================================================================================
+ */
 exports.iniciarSesionWeb = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -56,7 +64,15 @@ exports.iniciarSesionWeb = async (req, res) => {
     }
 };
 
-// Inicio de Sesión App (Guardias)
+/**
+ * ================================================================================================
+ * NOMBRE: Inicio de Sesión App Móvil
+ * FUNCIÓN: Autentica guardias mediante RUT y contraseña para acceso a la aplicación móvil.
+ * USO: POST /api/auth/signin-app - Retorna token JWT y datos del guardia.
+ * -----------------------------------------------------------------------
+ * Verifica el flag 'activo_app' y actualiza la fecha de 'ultimo_acceso' tras un login exitoso.
+ * ================================================================================================
+ */
 exports.iniciarSesionApp = async (req, res) => {
     try {
         const { rut, password } = req.body;
@@ -107,7 +123,15 @@ exports.iniciarSesionApp = async (req, res) => {
     }
 };
 
-// Verificar Token (Endpoint para validar sesión)
+/**
+ * ================================================================================================
+ * NOMBRE: Verificación de Token y Sesión
+ * FUNCIÓN: Valida la vigencia del token y el estado actual del usuario o guardia en la BD.
+ * USO: GET /api/auth/verify - Retorna datos actualizados del perfil si el token es válido.
+ * -----------------------------------------------------------------------
+ * Diferencia la lógica de validación según el 'userType' (usuario vs guardia) inyectado por el middleware de autenticación.
+ * ================================================================================================
+ */
 exports.verificarToken = async (req, res) => {
     try {
         if (req.userType === 'usuario') {

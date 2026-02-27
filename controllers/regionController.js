@@ -1,17 +1,16 @@
 const { Region } = require('../models');
 
-const getAllRegions = async (req, res) => {
+/**
+ * NOMBRE: Listar Regiones
+ * FUNCIÓN: Obtiene todas las regiones ordenadas ascendente por ID.
+ * USO: GET /regiones - Retorna array JSON de regiones.
+ * -----------------------------------------------------------------------
+ * Utilizado para poblar selectores geográficos en el frontend.
+ */
+exports.getAllRegions = async (req, res) => {
     try {
-        const regions = await Region.findAll({
-            order: [['id', 'ASC']]
-        });
-        res.json(regions);
+        res.json(await Region.findAll({ order: [['id', 'ASC']] }));
     } catch (error) {
-        console.error('Error obteniendo regiones:', error);
-        res.status(500).json({ message: 'Error interno del servidor al obtener regiones' });
+        res.status(500).json({ message: error.message });
     }
-};
-
-module.exports = {
-    getAllRegions
 };

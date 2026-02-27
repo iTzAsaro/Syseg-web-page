@@ -1,25 +1,25 @@
 const { Comuna } = require('../models');
 
-const getAllComunas = async (req, res) => {
+/**
+ * ================================================================================================
+ * NOMBRE: Listar Comunas
+ * FUNCIÓN: Obtiene la lista de comunas, opcionalmente filtradas por región.
+ * USO: GET /comunas?region_id=5 - Retorna array JSON de comunas ordenadas alfabéticamente.
+ * -----------------------------------------------------------------------
+ * Permite filtrar dinámicamente por 'region_id' para implementar selectores en cascada en el frontend.
+ * ================================================================================================
+ */
+exports.getAllComunas = async (req, res) => {
     try {
         const { region_id } = req.query;
-        const whereClause = {};
-        
-        if (region_id) {
-            whereClause.region_id = region_id;
-        }
+        const where = region_id ? { region_id } : {};
 
         const comunas = await Comuna.findAll({
-            where: whereClause,
+            where,
             order: [['nombre', 'ASC']]
         });
         res.json(comunas);
     } catch (error) {
-        console.error('Error obteniendo comunas:', error);
-        res.status(500).json({ message: 'Error interno del servidor al obtener comunas' });
+        res.status(500).json({ message: error.message });
     }
-};
-
-module.exports = {
-    getAllComunas
 };

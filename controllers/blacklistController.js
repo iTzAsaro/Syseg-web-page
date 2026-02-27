@@ -1,117 +1,71 @@
 const { Blacklist, Usuario, Auditoria } = require('../models');
 
-// Crear un nuevo registro en la lista negra
+/**
+ * NOMBRE: Agregar a Lista Negra
+ * FUNCIÓN: Registra un RUT en la lista negra para restringir acceso.
+ * USO: POST /blacklist - Retorna registro creado.
+ * -----------------------------------------------------------------------
+ * Verifica existencia previa y registra auditoría automáticamente.
+ */
 exports.crear = async (req, res) => {
     try {
-        const { nombre, rut, recintos, fecha_bloqueo, motivo, fecha_ingreso } = req.body;
+        const { rut } = req.body;
+        if (await Blacklist.count({ where: { rut } })) return res.status(400).send({ message: "RUT ya en lista negra." });
+
+        const usuario = req.userId ? await Usuario.findByPk(req.userId) : null;
+        const nuevo = await Blacklist.create({ ...req.body, agregado_por: usuario?.nombre || 'Sistema', agregado_por_id: usuario?.id });
         
-        // Validar si ya existe
-        const existente = await Blacklist.findOne({ where: { rut } });
-        if (existente) {
-            return res.status(400).send({ message: "Este RUT ya se encuentra en la lista negra." });
-        }
-
-        // Obtener usuario autenticado para auditoría
-        let agregado_por = 'Sistema';
-        let agregado_por_id = null;
-        if (req.userId) {
-            const usuario = await Usuario.findByPk(req.userId);
-            if (usuario) {
-                agregado_por = usuario.nombre || 'Sistema';
-                agregado_por_id = usuario.id;
-            }
-        }
-
-        if (!agregado_por) {
-            return res.status(400).send({ message: "Campo agregado_por es requerido." });
-        }
-
-        const registro = await Blacklist.create({
-            nombre,
-            rut,
-            recintos,
-            fecha_bloqueo,
-            motivo,
-            fecha_ingreso,
-            agregado_por,
-            agregado_por_id
-        });
-
-        // Log de auditoría
-        try {
-            await Auditoria.create({
-                usuario_id: agregado_por_id,
-                objetivo_id: registro.id,
-                accion: 'BLACKLIST_ADD',
-                detalles: JSON.stringify({ rut, nombre, agregado_por })
-            });
-        } catch (e) {
-            // No bloquear por fallo de auditoría
-            console.warn('Audit log failed for BLACKLIST_ADD:', e.message);
-        }
-
-        res.status(201).send(registro);
-    } catch (error) {
-        res.status(500).send({ message: error.message });
-    }
+        await safeAudit(usuario?.id, nuevo.id, 'BLACKLIST_ADD', req.body);
+        res.status(201).send(nuevo);
+    } catch (e) { res.status(500).send({ message: e.message }); }
 };
 
-// Listar todos los registros
+/**
+ * NOMBRE: Listar Bloqueados
+ * FUNCIÓN: Obtiene todos los registros activos en lista negra.
+ * USO: GET /blacklist - Retorna lista ordenada por fecha.
+ * -----------------------------------------------------------------------
+ * Orden descendente por creación.
+ */
 exports.buscarTodos = async (req, res) => {
     try {
-        const registros = await Blacklist.findAll({
-            order: [['createdAt', 'DESC']]
-        });
-        res.status(200).send(registros);
-    } catch (error) {
-        res.status(500).send({ message: error.message });
-    }
+        res.send(await Blacklist.findAll({ order: [['createdAt', 'DESC']] }));
+    } catch (e) { res.status(500).send({ message: e.message }); }
 };
 
-// Actualizar un registro
+/**
+ * NOMBRE: Actualizar Bloqueo
+ * FUNCIÓN: Modifica datos de un registro en lista negra.
+ * USO: PUT /blacklist/:id - Retorna registro actualizado.
+ * -----------------------------------------------------------------------
+ * Devuelve 404 si el registro no existe.
+ */
 exports.actualizar = async (req, res) => {
     try {
-        const id = req.params.id;
-        const [actualizado] = await Blacklist.update(req.body, {
-            where: { id: id }
-        });
-
-        if (actualizado) {
-            const registroActualizado = await Blacklist.findByPk(id);
-            res.status(200).send(registroActualizado);
-        } else {
-            res.status(404).send({ message: "Registro no encontrado." });
-        }
-    } catch (error) {
-        res.status(500).send({ message: error.message });
-    }
+        const { id } = req.params;
+        const [updated] = await Blacklist.update(req.body, { where: { id } });
+        updated ? res.send(await Blacklist.findByPk(id)) : res.status(404).send({ message: "No encontrado." });
+    } catch (e) { res.status(500).send({ message: e.message }); }
 };
 
-// Eliminar un registro (desbloquear)
+/**
+ * NOMBRE: Eliminar Bloqueo
+ * FUNCIÓN: Remueve un registro de la lista negra.
+ * USO: DELETE /blacklist/:id - Retorna 204 No Content.
+ * -----------------------------------------------------------------------
+ * Registra auditoría antes de eliminar.
+ */
 exports.eliminar = async (req, res) => {
     try {
-        const id = req.params.id;
-        const eliminado = await Blacklist.destroy({
-            where: { id: id }
-        });
+        const { id } = req.params;
+        if (!await Blacklist.destroy({ where: { id } })) return res.status(404).send({ message: "No encontrado." });
+        
+        await safeAudit(req.userId, id, 'BLACKLIST_DELETE', { id });
+        res.status(204).send();
+    } catch (e) { res.status(500).send({ message: e.message }); }
+};
 
-        if (eliminado) {
-            // Auditoría de eliminación
-            try {
-                await Auditoria.create({
-                    usuario_id: req.userId || null,
-                    objetivo_id: id,
-                    accion: 'BLACKLIST_DELETE',
-                    detalles: JSON.stringify({ id })
-                });
-            } catch (e) {
-                console.warn('Audit log failed for BLACKLIST_DELETE:', e.message);
-            }
-            res.status(204).send();
-        } else {
-            res.status(404).send({ message: "Registro no encontrado." });
-        }
-    } catch (error) {
-        res.status(500).send({ message: error.message });
-    }
+const safeAudit = async (uid, oid, action, details) => {
+    try { await Auditoria.create({ usuario_id: uid, objetivo_id: oid, accion: action, detalles: JSON.stringify(details) }); }
+    catch (e) { console.warn(`Audit error (${action}):`, e.message); }
 };

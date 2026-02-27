@@ -1,94 +1,63 @@
 const jwt = require('jsonwebtoken');
 const { Usuario, Permiso } = require('../models');
 
-// Middleware: Verificar si el usuario tiene un permiso específico
-const hasPermission = (requiredPermission) => {
-    return async (req, res, next) => {
-        try {
-            // Si es guardia, no tiene permisos granulares por ahora (o definimos lógica aparte)
-            if (req.userType === 'guardia') {
-                 // Podríamos permitir ciertas cosas a guardias, pero por ahora denegamos si requiere permiso granular
-                 // O, si queremos que los guardias tengan ciertos permisos implícitos, manejarlo aquí.
-                 return res.status(403).send({ message: "No tiene permisos para realizar esta acción." });
-            }
-
-            const usuario = await Usuario.findByPk(req.userId, {
-                include: [{
-                    model: Permiso,
-                    attributes: ['codigo'],
-                    through: { attributes: [] }
-                }]
-            });
-
-            if (!usuario) {
-                return res.status(404).send({ message: "Usuario no encontrado." });
-            }
-
-            // Si es Admin (Rol 1), tiene acceso total (bypass)
-            if (usuario.rol_id === 1) {
-                next();
-                return;
-            }
-
-            // Verificar si tiene el permiso requerido
-            const userPermissions = usuario.Permisos.map(p => p.codigo);
-            if (userPermissions.includes(requiredPermission)) {
-                next();
-                return;
-            }
-
-            res.status(403).send({ message: `Requiere permiso: ${requiredPermission}` });
-
-        } catch (error) {
-            res.status(500).send({ message: error.message });
-        }
-    };
-};
-
+/**
+ * NOMBRE: Verificar Token JWT
+ * FUNCIÓN: Valida la presencia y autenticidad del token Bearer en los headers.
+ * USO: Middleware global en rutas protegidas - Inyecta userId, userRole, userType en req.
+ * -----------------------------------------------------------------------
+ * Decodifica el token usando JWT_SECRET y rechaza peticiones sin formato Bearer correcto.
+ */
 const verifyToken = (req, res, next) => {
-    const token = req.headers['authorization'];
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return res.status(403).send({ message: '¡No se ha proporcionado token!' });
 
-    if (!token) {
-        return res.status(403).send({
-            message: '¡No se ha proporcionado token!'
-        });
-    }
+    const [scheme, token] = authHeader.split(' ');
+    if (scheme !== 'Bearer' || !token) return res.status(401).send({ message: 'Formato inválido. Use: Bearer <token>' });
 
-    // Bearer <token>
-    const tokenParts = token.split(' ');
-    if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer') {
-         return res.status(401).send({
-            message: '¡No autorizado! El formato es Bearer <token>'
-        });
-    }
-
-    jwt.verify(tokenParts[1], process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({
-                message: '¡No autorizado!'
-            });
-        }
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(401).send({ message: '¡No autorizado!' });
         req.userId = decoded.id;
         req.userRole = decoded.role;
-        req.userType = decoded.type; // 'usuario' or 'guardia'
+        req.userType = decoded.type;
         next();
     });
 };
 
+/**
+ * NOMBRE: Verificar Rol Administrador
+ * FUNCIÓN: Restringe el acceso únicamente a usuarios con rol de Administrador.
+ * USO: Middleware tras verifyToken - Permite paso solo si userRole es 1 o 'Admin'.
+ * -----------------------------------------------------------------------
+ * Verifica tanto el ID numérico (1) como el string 'Admin' para compatibilidad.
+ */
 const isAdmin = (req, res, next) => {
-    // Check if role allows admin access (Simplification: Role name 'Admin')
-    if (req.userRole === 'Admin' || req.userRole === 1) { 
-        next();
-        return;
-    }
-    res.status(403).send({
-        message: '¡Se requiere rol de Administrador!',
-        role: req.userRole
-    });
+    if (req.userRole === 1 || req.userRole === 'Admin') return next();
+    res.status(403).send({ message: '¡Se requiere rol de Administrador!', role: req.userRole });
 };
 
-module.exports = {
-    verifyToken,
-    isAdmin,
-    hasPermission
+/**
+ * NOMBRE: Verificar Permiso Granular
+ * FUNCIÓN: Valida si el usuario tiene asignado un permiso específico por código.
+ * USO: hasPermission('CODIGO_PERMISO') - Middleware dinámico.
+ * -----------------------------------------------------------------------
+ * Los Admins (Rol 1) tienen acceso total (bypass). Los guardias no tienen permisos granulares.
+ */
+const hasPermission = (permisoRequerido) => async (req, res, next) => {
+    try {
+        if (req.userType === 'guardia') return res.status(403).send({ message: "Acción no permitida para guardias." });
+
+        const usuario = await Usuario.findByPk(req.userId, {
+            include: [{ model: Permiso, attributes: ['codigo'], through: { attributes: [] } }]
+        });
+
+        if (!usuario) return res.status(404).send({ message: "Usuario no encontrado." });
+        if (usuario.rol_id === 1 || usuario.Permisos.some(p => p.codigo === permisoRequerido)) return next();
+
+        res.status(403).send({ message: `Requiere permiso: ${permisoRequerido}` });
+    } catch (e) {
+        res.status(500).send({ message: e.message });
+    }
 };
+
+module.exports = { verifyToken, isAdmin, hasPermission };
